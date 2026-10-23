@@ -5,6 +5,7 @@
 | [`boulangerie-api/`](boulangerie-api/README.md) | API REST Laravel 12 (MySQL, Sanctum) : installation, comptes de démo, routes |
 | [`boulangerie-app/`](boulangerie-app/README.md) | Appli Flutter bilingue malgache / français |
 | [`docs/CONCEPTION.md`](docs/CONCEPTION.md) | Modèle de données, règles de calcul, exemples chiffrés du bénéfice |
+| [`docs/DEPLOIEMENT.md`](docs/DEPLOIEMENT.md) | Mise en ligne gratuite : API sur alwaysdata, APK sur les Releases GitHub |
 
 Démarrage rapide :
 
@@ -24,7 +25,8 @@ cd boulangerie-app
 flutter run
 ```
 
-Connexion de démo : 034 00 000 01, PIN 1234 (propriétaire).
+Connexion de démo, en local uniquement : 034 00 000 01, PIN 1234 (propriétaire). Ces comptes ne
+sont jamais créés sur un serveur en production.
 
 APK à installer sur les téléphones (remplacez l'adresse par celle du PC qui fait tourner l'API) :
 

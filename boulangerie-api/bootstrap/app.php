@@ -20,6 +20,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        // Hébergement derrière un proxy (alwaysdata…) : HTTPS et IP du client lus dans les en-têtes X-Forwarded-*.
+        $middleware->trustProxies(at: '*');
+
         $middleware->api(prepend: [
             ForceJsonResponse::class,
             SetLocaleFromHeader::class,

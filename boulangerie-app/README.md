@@ -43,6 +43,13 @@ Comptes de démonstration (créés par `php artisan migrate --seed`) :
 
 ## Générer l'APK (installation sur les téléphones)
 
+Si l'API est hébergée en ligne (gratuitement sur alwaysdata, voir
+[`../docs/DEPLOIEMENT.md`](../docs/DEPLOIEMENT.md)), construisez l'APK avec son adresse HTTPS :
+`--dart-define=API_URL=https://COMPTE.alwaysdata.net/api`. Publiez-le ensuite sur les Releases
+GitHub : le lien de téléchargement est gratuit et ne change pas d'une version à l'autre.
+
+Les étapes ci-dessous concernent le cas où l'API tourne sur le PC de la boutique.
+
 ### 1. Trouver l'adresse du PC qui fait tourner l'API
 
 Sur ce PC, `ipconfig` donne l'« Adresse IPv4 » sur le Wi-Fi, par exemple `192.168.1.20`.

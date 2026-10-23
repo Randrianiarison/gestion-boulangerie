@@ -9,15 +9,30 @@ use App\Enums\UserRole;
 use App\Models\Ingredient;
 use App\Models\Product;
 use App\Models\User;
+use App\Support\Phone;
 use Illuminate\Database\Seeder;
+use RuntimeException;
 
 /**
- * Données de départ : comptes de démo, catalogue et ingrédients.
+ * Données de départ : comptes, catalogue et ingrédients.
  * Les noms malgaches sont à faire relire par un locuteur natif.
  */
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
+    {
+        // Les PIN de démo sont publics (README) : jamais sur un serveur en ligne.
+        if (app()->isProduction()) {
+            $this->seedProductionOwner();
+        } else {
+            $this->seedDemoAccounts();
+        }
+
+        $this->seedProducts();
+        $this->seedIngredients();
+    }
+
+    private function seedDemoAccounts(): void
     {
         User::updateOrCreate(['phone' => '0340000001'], [
             'name' => 'Propriétaire',
@@ -31,9 +46,29 @@ class DatabaseSeeder extends Seeder
             'role' => UserRole::Staff,
             'active' => true,
         ]);
+    }
 
-        $this->seedProducts();
-        $this->seedIngredients();
+    /** Seul le propriétaire défini dans .env (SEED_OWNER_*) ; les employés se créent ensuite dans l'appli. */
+    private function seedProductionOwner(): void
+    {
+        $owner = config('boulangerie.seed_owner');
+        $phone = Phone::normalize($owner['phone']);
+        $pin = (string) $owner['pin'];
+
+        if ($phone === null || ! preg_match('/^0\d{9}$/', $phone) || ! preg_match('/^\d{4,6}$/', $pin)) {
+            throw new RuntimeException(
+                'En production, renseignez SEED_OWNER_PHONE (ex. 034 12 345 67) et SEED_OWNER_PIN (4 à 6 chiffres) dans .env, '
+                .'puis lancez php artisan config:clear avant php artisan db:seed --force.'
+            );
+        }
+
+        // firstOrCreate : relancer le seed ne remet pas l'ancien PIN si le propriétaire l'a changé dans l'appli.
+        User::firstOrCreate(['phone' => $phone], [
+            'name' => $owner['name'],
+            'pin' => $pin,
+            'role' => UserRole::Owner,
+            'active' => true,
+        ]);
     }
 
     private function seedProducts(): void

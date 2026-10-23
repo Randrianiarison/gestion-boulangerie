@@ -71,7 +71,9 @@ Connexion par numéro de téléphone et code PIN :
 | Propriétaire (`owner`) | 034 00 000 01 | 1234 |
 | Employé (`staff`) | 034 00 000 02 | 5678 |
 
-Changez ces codes PIN avant toute utilisation réelle, depuis l'écran « Comptes » de l'appli.
+Ces comptes existent **seulement hors production**. Avec `APP_ENV=production`, `db:seed` crée
+uniquement le propriétaire défini par `SEED_OWNER_PHONE` et `SEED_OWNER_PIN` dans `.env`, et
+refuse les données de démo. Le dépôt étant public, ces PIN sont connus de tous.
 
 ## Tests
 
@@ -178,6 +180,14 @@ Toutes sont préfixées par `/api`, échangent du JSON et demandent un jeton San
 
 ## Mise en production
 
-- `APP_ENV=production`, `APP_DEBUG=false`.
-- Servez l'API en HTTPS dès qu'elle sort du réseau local : le jeton circule dans chaque requête.
-- Sauvegardez la base MySQL chaque jour (`mysqldump`).
+Le guide pas à pas pour un hébergement gratuit sur alwaysdata est dans
+[`../docs/DEPLOIEMENT.md`](../docs/DEPLOIEMENT.md). Il couvre la base de données, le SSH,
+l'installation et le HTTPS.
+
+- Modèle de configuration : `.env.alwaysdata.example`, avec `APP_ENV=production` et `APP_DEBUG=false`.
+- Mises à jour : `bash deploy.sh` sur le serveur. Le script récupère le code, installe les
+  dépendances, applique les migrations et remet les caches à jour.
+- L'API fait confiance aux en-têtes du proxy (`trustProxies`) : derrière l'hébergeur, elle voit bien
+  les requêtes HTTPS.
+- Servez toujours l'API en HTTPS hors du réseau local : le jeton circule dans chaque requête.
+- Sauvegardez la base régulièrement (`mysqldump`, voir le guide).

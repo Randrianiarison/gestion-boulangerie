@@ -36,6 +36,13 @@ class DemoDataSeeder extends Seeder
         DayClosingService $closings,
         IngredientService $ingredients,
     ): void {
+        // Des ventes fictives fausseraient les vrais rapports.
+        if (app()->isProduction()) {
+            $this->command?->error('Données de démo refusées en production.');
+
+            return;
+        }
+
         $this->call(DatabaseSeeder::class);
 
         if (DayClosing::exists()) {
