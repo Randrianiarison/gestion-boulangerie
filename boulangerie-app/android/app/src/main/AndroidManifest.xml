@@ -2,7 +2,7 @@
     <!-- Accès à l'API en HTTP (réseau local), y compris dans les builds release. -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <application
-        android:label="Boulangerie"
+        android:label="@string/app_name"
         android:usesCleartextTraffic="true"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">

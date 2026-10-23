@@ -1,0 +1,6 @@
+# Copier en android/key.properties (ignoré par git) et remplir avec la clé de signature.
+# Voir README « Générer l'APK ». Ne jamais commiter key.properties ni le fichier .jks.
+storePassword=mot_de_passe_du_keystore
+keyPassword=mot_de_passe_du_keystore
+keyAlias=upload
+storeFile=C:/Users/VOUS/.keystores/boulangerie-upload.jks

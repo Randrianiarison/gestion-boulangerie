@@ -25,3 +25,13 @@ flutter run
 ```
 
 Connexion de démo : 034 00 000 01, PIN 1234 (propriétaire).
+
+APK à installer sur les téléphones (remplacez l'adresse par celle du PC qui fait tourner l'API) :
+
+```bash
+cd boulangerie-app
+flutter build apk --release --dart-define=API_URL=http://192.168.1.20:8000/api
+```
+
+Le détail est dans [`boulangerie-app/README.md`](boulangerie-app/README.md#générer-lapk-installation-sur-les-téléphones),
+y compris la sauvegarde de la clé de signature, indispensable pour les mises à jour.
