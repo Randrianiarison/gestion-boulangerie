@@ -4,6 +4,11 @@ enum ProductCategory { bread, juice }
 
 enum ProductFormat { piece, glass, bottle }
 
+/// Taille facultative : même produit, même qualité, quantité et prix différents.
+enum ProductSize { small, medium, large }
+
+ProductSize? productSizeFromJson(Object? value) => value == null ? null : ProductSize.values.byName(value as String);
+
 enum SaleSource { counter, closing }
 
 enum WasteReason { expired, damaged, other }
@@ -15,6 +20,7 @@ class Product {
     required this.nameFr,
     required this.nameMg,
     required this.format,
+    this.size,
     required this.unitPrice,
     required this.shelfLifeDays,
     required this.active,
@@ -26,6 +32,7 @@ class Product {
         nameFr: json['name_fr'] as String,
         nameMg: json['name_mg'] as String,
         format: ProductFormat.values.byName(json['format'] as String),
+        size: productSizeFromJson(json['size']),
         unitPrice: asInt(json['unit_price']),
         shelfLifeDays: asInt(json['shelf_life_days']),
         active: json['active'] as bool,
@@ -36,6 +43,7 @@ class Product {
   final String nameFr;
   final String nameMg;
   final ProductFormat format;
+  final ProductSize? size;
   final int unitPrice;
   final int shelfLifeDays;
   final bool active;

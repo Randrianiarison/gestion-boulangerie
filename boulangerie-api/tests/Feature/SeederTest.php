@@ -24,7 +24,7 @@ class SeederTest extends TestCase
 
         $this->assertTrue(User::where('phone', '0340000001')->where('role', UserRole::Owner)->exists());
         $this->assertTrue(User::where('phone', '0340000002')->where('role', UserRole::Staff)->exists());
-        $this->assertSame(10, Product::count());
+        $this->assertSame(12, Product::count());
         $this->assertSame(9, Ingredient::count());
     }
 
@@ -48,7 +48,7 @@ class SeederTest extends TestCase
         $this->assertSame('0341122233', $owner->phone);
         $this->assertSame(UserRole::Owner, $owner->role);
         $this->assertTrue(Hash::check('4821', $owner->pin));
-        $this->assertSame(10, Product::count());
+        $this->assertSame(12, Product::count());
 
         // Relancer le seed ne remet pas l'ancien PIN si le propriétaire l'a changé.
         $owner->update(['pin' => '9090']);

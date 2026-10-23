@@ -36,6 +36,12 @@ return [
         'bottle' => 'tavoahangy',
     ],
 
+    'sizes' => [
+        'small' => 'kely',
+        'medium' => 'antonony',
+        'large' => 'lehibe',
+    ],
+
     'units' => [
         'kg' => 'kg',
         'g' => 'g',

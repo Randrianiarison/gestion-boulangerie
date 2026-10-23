@@ -35,6 +35,12 @@ return [
         'bottle' => 'bouteille',
     ],
 
+    'sizes' => [
+        'small' => 'petit',
+        'medium' => 'moyen',
+        'large' => 'grand',
+    ],
+
     'units' => [
         'kg' => 'kg',
         'g' => 'g',

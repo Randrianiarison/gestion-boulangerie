@@ -109,7 +109,7 @@ class _SaleScreenState extends ConsumerState<SaleScreen> {
               crossAxisCount: constraints.maxWidth > 600 ? 4 : 2,
               mainAxisSpacing: 12,
               crossAxisSpacing: 12,
-              childAspectRatio: 0.95,
+              childAspectRatio: 0.82,
             ),
             itemCount: rows.length,
             itemBuilder: (context, index) {

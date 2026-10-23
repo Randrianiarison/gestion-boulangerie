@@ -20,9 +20,7 @@ class ProductController extends Controller
 
         $products = Product::query()
             ->when($request->boolean('active'), fn ($query) => $query->active())
-            ->orderBy('category')
-            ->orderBy('name_fr')
-            ->orderByDesc('format')
+            ->catalogOrder()
             ->get();
 
         return ProductResource::collection($products);

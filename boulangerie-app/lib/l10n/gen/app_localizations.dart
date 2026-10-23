@@ -518,6 +518,36 @@ abstract class AppLocalizations {
   /// **'bouteille'**
   String get formatBottle;
 
+  /// No description provided for @size.
+  ///
+  /// In fr, this message translates to:
+  /// **'Taille'**
+  String get size;
+
+  /// No description provided for @sizeNone.
+  ///
+  /// In fr, this message translates to:
+  /// **'Taille unique'**
+  String get sizeNone;
+
+  /// No description provided for @sizeSmall.
+  ///
+  /// In fr, this message translates to:
+  /// **'Petit'**
+  String get sizeSmall;
+
+  /// No description provided for @sizeMedium.
+  ///
+  /// In fr, this message translates to:
+  /// **'Moyen'**
+  String get sizeMedium;
+
+  /// No description provided for @sizeLarge.
+  ///
+  /// In fr, this message translates to:
+  /// **'Grand'**
+  String get sizeLarge;
+
   /// No description provided for @categoryBread.
   ///
   /// In fr, this message translates to:

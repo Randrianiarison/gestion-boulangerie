@@ -90,6 +90,7 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
   late final _shelfLife = TextEditingController(text: (widget.product?.shelfLifeDays ?? 1).toString());
   late ProductCategory _category = widget.product?.category ?? ProductCategory.bread;
   late ProductFormat _format = widget.product?.format ?? ProductFormat.piece;
+  late ProductSize? _size = widget.product?.size;
   late bool _active = widget.product?.active ?? true;
   bool _saving = false;
 
@@ -111,6 +112,7 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
         'name_fr': _nameFr.text.trim(),
         'name_mg': _nameMg.text.trim(),
         'format': _format.name,
+        'size': _size?.name,
         'unit_price': parseInt(_price.text),
         'shelf_life_days': parseInt(_shelfLife.text),
         'active': _active,
@@ -162,6 +164,18 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
             ),
             const SizedBox(height: 12),
           ],
+          // Même produit vendu en plusieurs tailles : un produit par taille, chacun avec son prix.
+          Text(l10n.size),
+          const SizedBox(height: 6),
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            for (final size in [null, ...ProductSize.values])
+              ChoiceChip(
+                label: Text(size == null ? l10n.sizeNone : l10n.sizeLabel(size)),
+                selected: _size == size,
+                onSelected: (_) => setState(() => _size = size),
+              ),
+          ]),
+          const SizedBox(height: 12),
           AmountField(controller: _price, label: l10n.price),
           const SizedBox(height: 12),
           TextFormField(

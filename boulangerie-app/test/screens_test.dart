@@ -21,12 +21,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 // Données factices, au format exact de l'API ------------------------------------
 
-Map<String, dynamic> _product(int id, String category, String fr, String mg, String format, int price, [int days = 1]) => {
+Map<String, dynamic> _product(int id, String category, String fr, String mg, String format, int price,
+        [int days = 1, String? size]) =>
+    {
       'id': id,
       'category': category,
       'name_fr': fr,
       'name_mg': mg,
       'format': format,
+      'size': size,
       'unit_price': price,
       'shelf_life_days': days,
       'active': true,
@@ -37,12 +40,15 @@ final _products = [
   _product(2, 'bread', 'Pain de mie', 'Mofo malefaka', 'piece', 3000, 3),
   _product(3, 'juice', 'Jus de papaye', 'Ranom-papay', 'glass', 1000),
   _product(4, 'juice', "Jus d'avocat", 'Ranon-javoka', 'bottle', 4000, 2),
+  // Même pain en deux tailles, prix différents.
+  _product(5, 'bread', 'Pain au chocolat', 'Mofo sôkôla', 'piece', 1000, 2, 'small'),
+  _product(6, 'bread', 'Pain au chocolat', 'Mofo sôkôla', 'piece', 1500, 2, 'large'),
 ];
 
 Map<String, dynamic> _row(int index, int available, int expiring) =>
     {'product': _products[index], 'available': available, 'expiring': expiring, 'stale': 0};
 
-final _stockRows = [_row(0, 45, 45), _row(1, 30, 10), _row(2, 0, 0), _row(3, 8, 0)];
+final _stockRows = [_row(0, 45, 45), _row(1, 30, 10), _row(2, 0, 0), _row(3, 8, 0), _row(4, 12, 0), _row(5, 9, 0)];
 
 final _flour = {
   'id': 1,
@@ -308,6 +314,23 @@ void main() {
     // Confirmation avant validation, avec le détail.
     expect(find.text('Valider cette vente ?'), findsOneWidget);
     expect(find.text('2 × Baguette'), findsOneWidget);
+  });
+
+  testWidgets('vente : même pain en deux tailles, chacune avec son prix', (tester) async {
+    final container = await _startAsOwner(tester, 'fr');
+    unawaited(container.read(routerProvider).push(Routes.sale));
+    await tester.pumpAndSettle();
+
+    final large = find.text('Pain au chocolat · grand');
+    await tester.scrollUntilVisible(large, 200, scrollable: find.byType(Scrollable).first);
+    expect(find.text('Pain au chocolat · petit'), findsOneWidget);
+    expect(find.text('1 500 Ar'), findsOneWidget);
+
+    await tester.tap(large);
+    await tester.pumpAndSettle();
+
+    // Le panier compte le prix du grand (1 500 Ar), pas celui du petit.
+    expect(find.text('1 500 Ar'), findsNWidgets(2));
   });
 
   testWidgets('clôture : validation possible seulement quand tout est compté, avec aperçu', (tester) async {

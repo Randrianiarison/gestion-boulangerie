@@ -35,6 +35,12 @@ void main() {
     });
   });
 
+  test('la taille est facultative', () {
+    expect(Product.fromJson({..._product(), 'size': 'large'}).size, ProductSize.large);
+    expect(Product.fromJson({..._product(), 'size': null}).size, isNull);
+    expect(Product.fromJson(_product()).size, isNull); // ancienne API sans le champ
+  });
+
   test('Laravel envoie 0 au lieu de 0.0 : les nombres sont lus via num', () {
     final summary = SalarySummary.fromJson({
       'accrued': 385000,

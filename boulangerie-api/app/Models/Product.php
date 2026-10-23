@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\ProductCategory;
 use App\Enums\ProductFormat;
+use App\Enums\ProductSize;
 use Carbon\CarbonImmutable;
 use Database\Factories\ProductFactory;
 use Illuminate\Database\Eloquent\Builder;
@@ -21,6 +22,7 @@ class Product extends Model
         'name_fr',
         'name_mg',
         'format',
+        'size',
         'unit_price',
         'shelf_life_days',
         'active',
@@ -31,6 +33,7 @@ class Product extends Model
         return [
             'category' => ProductCategory::class,
             'format' => ProductFormat::class,
+            'size' => ProductSize::class,
             'unit_price' => 'integer',
             'shelf_life_days' => 'integer',
             'active' => 'boolean',
@@ -57,21 +60,31 @@ class Product extends Model
         $query->where('active', true);
     }
 
+    /** Ordre des listes : pains puis jus, par nom, pièce/verre/bouteille, puis petit/moyen/grand. */
+    public function scopeCatalogOrder(Builder $query): void
+    {
+        $query->orderBy('category')
+            ->orderBy('name_fr')
+            ->orderByDesc('format')
+            ->orderByRaw("case size when 'small' then 1 when 'medium' then 2 when 'large' then 3 else 0 end");
+    }
+
     /** Un pain à 1 jour expire le jour même ; à 3 jours, le surlendemain. */
     public function expiryDateFor(CarbonImmutable $producedOn): CarbonImmutable
     {
         return $producedOn->addDays(max(1, $this->shelf_life_days) - 1);
     }
 
-    /** Nom dans la langue courante, avec le format pour les jus : « Jus de papaye (verre) ». */
+    /** Nom dans la langue courante, avec format et taille : « Jus de papaye (verre) », « Pain au chocolat (grand) ». */
     public function displayName(): string
     {
         $name = app()->getLocale() === 'mg' ? $this->name_mg : $this->name_fr;
 
-        if ($this->format === ProductFormat::Piece) {
-            return $name;
-        }
+        $details = array_filter([
+            $this->format === ProductFormat::Piece ? null : __('messages.formats.'.$this->format->value),
+            $this->size === null ? null : __('messages.sizes.'.$this->size->value),
+        ]);
 
-        return $name.' ('.__('messages.formats.'.$this->format->value).')';
+        return $details === [] ? $name : $name.' ('.implode(', ', $details).')';
     }
 }

@@ -48,6 +48,7 @@ class TopProduct {
     required this.nameFr,
     required this.nameMg,
     required this.format,
+    this.size,
     required this.quantity,
     required this.revenue,
   });
@@ -56,6 +57,7 @@ class TopProduct {
         nameFr: json['name_fr'] as String,
         nameMg: json['name_mg'] as String,
         format: ProductFormat.values.byName(json['format'] as String),
+        size: productSizeFromJson(json['size']),
         quantity: asInt(json['quantity']),
         revenue: asInt(json['revenue']),
       );
@@ -63,6 +65,7 @@ class TopProduct {
   final String nameFr;
   final String nameMg;
   final ProductFormat format;
+  final ProductSize? size;
   final int quantity;
   final int revenue;
 

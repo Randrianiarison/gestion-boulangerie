@@ -197,8 +197,8 @@ class ProfitCalculator
         return DB::table('sales')
             ->join('products', 'products.id', '=', 'sales.product_id')
             ->whereBetween('sales.sold_on', $this->range($from, $to))
-            ->groupBy('sales.product_id', 'products.name_fr', 'products.name_mg', 'products.format', 'products.category')
-            ->selectRaw('sales.product_id, products.name_fr, products.name_mg, products.format, products.category,
+            ->groupBy('sales.product_id', 'products.name_fr', 'products.name_mg', 'products.format', 'products.size', 'products.category')
+            ->selectRaw('sales.product_id, products.name_fr, products.name_mg, products.format, products.size, products.category,
                 SUM(sales.quantity) as quantity, SUM(sales.total) as revenue')
             ->orderByDesc('revenue')
             ->limit($limit)
@@ -208,6 +208,7 @@ class ProfitCalculator
                 'name_fr' => $row->name_fr,
                 'name_mg' => $row->name_mg,
                 'format' => $row->format,
+                'size' => $row->size,
                 'category' => $row->category,
                 'quantity' => (int) $row->quantity,
                 'revenue' => (int) $row->revenue,

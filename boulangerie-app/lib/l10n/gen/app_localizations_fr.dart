@@ -229,6 +229,21 @@ class AppLocalizationsFr extends AppLocalizations {
   String get formatBottle => 'bouteille';
 
   @override
+  String get size => 'Taille';
+
+  @override
+  String get sizeNone => 'Taille unique';
+
+  @override
+  String get sizeSmall => 'Petit';
+
+  @override
+  String get sizeMedium => 'Moyen';
+
+  @override
+  String get sizeLarge => 'Grand';
+
+  @override
   String get categoryBread => 'Pain';
 
   @override

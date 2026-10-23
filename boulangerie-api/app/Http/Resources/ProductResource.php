@@ -17,6 +17,7 @@ class ProductResource extends JsonResource
             'name_fr' => $this->name_fr,
             'name_mg' => $this->name_mg,
             'format' => $this->format,
+            'size' => $this->size,
             'unit_price' => $this->unit_price,
             'shelf_life_days' => $this->shelf_life_days,
             'active' => $this->active,

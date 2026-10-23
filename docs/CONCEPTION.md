@@ -24,6 +24,7 @@ Les points ambigus de la spécification ont été tranchés ainsi :
 | Recettes du jour | Visibles par le staff (ils encaissent). Factures et salaires dus : owner uniquement. |
 | Comptes | L'owner crée les comptes, réinitialise un PIN et désactive un compte depuis l'appli. Un nouveau PIN ou une désactivation ferme les sessions ouvertes. |
 | Commande `stock:close-day` | Lancée à la main uniquement (rattrapage d'une journée oubliée), pas planifiée. |
+| Même produit, tailles différentes | Taille facultative Petit / Moyen / Grand (mg : Kely / Antonony / Lehibe). Un produit par taille, chacun avec son prix et son stock : « Pain au chocolat · petit » 1 000 Ar, « Pain au chocolat · grand » 1 500 Ar. |
 
 Choix par défaut, annoncés avant le développement :
 
@@ -72,6 +73,7 @@ erDiagram
         string name_fr
         string name_mg
         string format "piece | glass | bottle"
+        string size "small | medium | large, facultatif"
         int unit_price "Ar"
         int shelf_life_days "1 = jour même"
         bool active
@@ -182,6 +184,16 @@ En plus de la spécification :
 ---
 
 ## 3. Règles de calcul
+
+### 3.0 Produits : format et taille
+
+- Un produit = un nom + un format (pièce, verre, bouteille) + une taille facultative
+  (petit, moyen, grand). Le triplet (nom, format, taille) est unique.
+- Deux tailles d'un même pain sont deux produits distincts : chacun a son prix, ses lots de
+  production, son stock et sa ligne dans la clôture et dans les rapports.
+- Affichage : « Pain au chocolat · grand » dans l'appli, « Pain au chocolat (grand) » dans les
+  messages de l'API, traduits en malgache (« Mofo sôkôla (lehibe) »).
+- Listes triées par catégorie, nom, format, puis petit → moyen → grand.
 
 ### 3.1 Lots, stock et FIFO
 

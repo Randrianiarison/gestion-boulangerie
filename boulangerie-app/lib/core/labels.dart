@@ -25,6 +25,12 @@ extension EnumLabels on AppLocalizations {
         ProductFormat.bottle => formatBottle,
       };
 
+  String sizeLabel(ProductSize size) => switch (size) {
+        ProductSize.small => sizeSmall,
+        ProductSize.medium => sizeMedium,
+        ProductSize.large => sizeLarge,
+      };
+
   String categoryLabel(ProductCategory category) => switch (category) {
         ProductCategory.bread => categoryBread,
         ProductCategory.juice => categoryJuice,
@@ -71,12 +77,23 @@ extension EnumLabels on AppLocalizations {
       };
 }
 
-/// « Baguette », « Jus de papaye · verre ».
-String productLabel(BuildContext context, {required String nameFr, required String nameMg, required ProductFormat format}) {
-  final name = context.lang == 'mg' ? nameMg : nameFr;
-  return format == ProductFormat.piece ? name : '$name · ${context.l10n.formatLabel(format)}';
+/// « Baguette », « Jus de papaye · verre », « Pain au chocolat · grand ».
+String productLabel(
+  BuildContext context, {
+  required String nameFr,
+  required String nameMg,
+  required ProductFormat format,
+  ProductSize? size,
+}) {
+  final l10n = context.l10n;
+  return [
+    context.lang == 'mg' ? nameMg : nameFr,
+    if (format != ProductFormat.piece) l10n.formatLabel(format),
+    if (size != null) l10n.sizeLabel(size).toLowerCase(),
+  ].join(' · ');
 }
 
 extension ProductLabel on Product {
-  String label(BuildContext context) => productLabel(context, nameFr: nameFr, nameMg: nameMg, format: format);
+  String label(BuildContext context) =>
+      productLabel(context, nameFr: nameFr, nameMg: nameMg, format: format, size: size);
 }

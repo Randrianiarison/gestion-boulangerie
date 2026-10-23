@@ -229,6 +229,21 @@ class AppLocalizationsMg extends AppLocalizations {
   String get formatBottle => 'tavoahangy';
 
   @override
+  String get size => 'Habe';
+
+  @override
+  String get sizeNone => 'Habe tokana';
+
+  @override
+  String get sizeSmall => 'Kely';
+
+  @override
+  String get sizeMedium => 'Antonony';
+
+  @override
+  String get sizeLarge => 'Lehibe';
+
+  @override
   String get categoryBread => 'Mofo';
 
   @override

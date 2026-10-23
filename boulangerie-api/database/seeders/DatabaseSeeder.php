@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Enums\IngredientUnit;
 use App\Enums\ProductCategory;
 use App\Enums\ProductFormat;
+use App\Enums\ProductSize;
 use App\Enums\UserRole;
 use App\Models\Ingredient;
 use App\Models\Product;
@@ -81,11 +82,22 @@ class DatabaseSeeder extends Seeder
             ['Pain au beurre', 'Mofo dibera', 1000, 3],
         ];
         foreach ($breads as [$fr, $mg, $price, $days]) {
-            Product::updateOrCreate(['name_fr' => $fr, 'format' => ProductFormat::Piece], [
+            Product::updateOrCreate(['name_fr' => $fr, 'format' => ProductFormat::Piece, 'size' => null], [
                 'category' => ProductCategory::Bread,
                 'name_mg' => $mg,
                 'unit_price' => $price,
                 'shelf_life_days' => $days,
+                'active' => true,
+            ]);
+        }
+
+        // Même pain, même qualité, deux tailles : chacune a son prix.
+        foreach ([[ProductSize::Small, 1000], [ProductSize::Large, 1500]] as [$size, $price]) {
+            Product::updateOrCreate(['name_fr' => 'Pain au chocolat', 'format' => ProductFormat::Piece, 'size' => $size], [
+                'category' => ProductCategory::Bread,
+                'name_mg' => 'Mofo sôkôla',
+                'unit_price' => $price,
+                'shelf_life_days' => 2,
                 'active' => true,
             ]);
         }
@@ -99,7 +111,7 @@ class DatabaseSeeder extends Seeder
         foreach ($juices as [$fr, $mg, $glassPrice, $bottlePrice]) {
             // Le verre se boit le jour même, la bouteille fermée se garde deux jours.
             foreach ([[ProductFormat::Glass, $glassPrice, 1], [ProductFormat::Bottle, $bottlePrice, 2]] as [$format, $price, $days]) {
-                Product::updateOrCreate(['name_fr' => $fr, 'format' => $format], [
+                Product::updateOrCreate(['name_fr' => $fr, 'format' => $format, 'size' => null], [
                     'category' => ProductCategory::Juice,
                     'name_mg' => $mg,
                     'unit_price' => $price,

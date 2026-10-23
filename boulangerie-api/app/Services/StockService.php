@@ -35,9 +35,7 @@ class StockService
                     $query->orWhere('active', true);
                 }
             })
-            ->orderBy('category')
-            ->orderBy('name_fr')
-            ->orderByDesc('format')
+            ->catalogOrder()
             ->get();
 
         return $products->map(function (Product $product) use ($lots, $date) {
