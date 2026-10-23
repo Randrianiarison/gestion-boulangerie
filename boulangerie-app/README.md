@@ -144,7 +144,9 @@ Les tests couvrent :
 - le passage en malgache sans plantage ;
 - un parcours de **tous les écrans** à la taille d'un téléphone (360 × 800), en malgache et en
   français, avec des données factices (aucun débordement de texte) ;
-- le panier de vente et la clôture.
+- le panier de vente et la clôture ;
+- le mode hors ligne : vente et production gardées sur le téléphone, stock affiché corrigé, envoi au
+  retour du réseau, clôture bloquée tant que tout n'est pas envoyé.
 
 ## Écrans
 
@@ -160,6 +162,7 @@ Les tests couvrent :
 | Employés | owner | Solde dû, mois non payés, paiements, changements de salaire |
 | Rapports | owner | Semaine / mois, période précédente / suivante, graphique recettes vs charges, détail, bénéfice |
 | Produits, Comptes | owner | Catalogue et prix ; comptes de connexion et codes PIN |
+| En attente d'envoi | tous | Ventes et production faites sans connexion ; « Envoyer maintenant », réessayer ou supprimer une opération refusée. S'ouvre depuis le bandeau « Hors ligne » |
 
 ## Langues
 
@@ -193,6 +196,23 @@ assets/icon/   images sources de l'icône
 ```
 
 ## Réseau
+
+### Sans connexion
+
+L'appli continue de vendre et d'enregistrer la production quand le réseau coupe (règles détaillées
+dans [`docs/CONCEPTION.md`](../docs/CONCEPTION.md), § 6) :
+
+- `lib/data/outbox.dart` : file d'attente des ventes et productions, gardée dans `shared_preferences`
+  et envoyée dans l'ordre avec un en-tête `Idempotency-Key` (pas de doublon si une réponse se perd) ;
+- `lib/data/connection.dart` : état de la connexion ; hors ligne, vérifie le serveur toutes les 15 s ;
+- `lib/core/response_cache.dart` : dernière réponse de l'accueil, du catalogue, du stock et de la
+  production du jour, affichée quand le serveur ne répond pas ;
+- `lib/widgets/offline_banner.dart` : bandeau « Hors ligne · N en attente d'envoi » en haut de l'appli.
+
+Pour l'essayer : faire une vente, couper le Wi-Fi du téléphone (ou arrêter `php artisan serve`),
+faire une autre vente, puis remettre le réseau. La vente part toute seule en moins de 30 secondes.
+
+### Autorisations HTTP
 
 - Android : `usesCleartextTraffic="true"` et la permission `INTERNET` autorisent l'appel HTTP vers
   le PC sur le réseau local.

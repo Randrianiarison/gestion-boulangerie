@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/api_client.dart';
 import '../core/format.dart';
+import '../core/response_cache.dart';
 import '../core/settings.dart';
 import '../features/auth/auth_controller.dart';
 import '../models/dashboard.dart';
@@ -12,6 +13,8 @@ import '../models/report.dart';
 import '../models/stock.dart';
 import '../models/user.dart';
 import 'bakery_api.dart';
+import 'connection.dart';
+import 'outbox.dart';
 
 final apiClientProvider = Provider<ApiClient>(
   (ref) => ApiClient(
@@ -20,10 +23,19 @@ final apiClientProvider = Provider<ApiClient>(
     languageCode: () => ref.read(localeProvider).languageCode,
     // Jeton refusé (compte désactivé, PIN changé) : retour à l'écran de connexion.
     onUnauthorized: () => ref.read(authProvider.notifier).expire(),
+    onReachability: (reachable) => ref.read(connectionProvider.notifier).report(reachable),
   ),
 );
 
-final bakeryApiProvider = Provider<BakeryApi>((ref) => BakeryApi(ref.watch(apiClientProvider)));
+final responseCacheProvider = Provider<ResponseCache>((ref) => ResponseCache(ref.watch(sharedPreferencesProvider)));
+
+final bakeryApiProvider = Provider<BakeryApi>(
+  (ref) => BakeryApi(
+    ref.watch(apiClientProvider),
+    cache: ref.watch(responseCacheProvider),
+    isOnline: () => ref.read(connectionProvider),
+  ),
+);
 
 final dashboardProvider = FutureProvider.autoDispose<Dashboard>((ref) => ref.watch(bakeryApiProvider).dashboard());
 
@@ -32,7 +44,14 @@ final activeProductsProvider =
 
 final allProductsProvider = FutureProvider.autoDispose<List<Product>>((ref) => ref.watch(bakeryApiProvider).products());
 
-final stockProvider = FutureProvider.autoDispose<List<StockRow>>((ref) => ref.watch(bakeryApiProvider).stock());
+/// Stock du jour tel que le serveur le connaît (ou sa dernière copie hors ligne).
+final serverStockProvider = FutureProvider.autoDispose<List<StockRow>>((ref) => ref.watch(bakeryApiProvider).stock());
+
+/// Stock affiché : celui du serveur, ajusté des ventes et productions pas encore envoyées.
+final stockProvider = Provider.autoDispose<AsyncValue<List<StockRow>>>((ref) {
+  final operations = ref.watch(outboxProvider);
+  return ref.watch(serverStockProvider).whenData((rows) => applyPendingToStock(rows, operations, today()));
+});
 
 final productionTodayProvider =
     FutureProvider.autoDispose<List<StockLot>>((ref) => ref.watch(bakeryApiProvider).productionOn(today()));
@@ -67,7 +86,7 @@ final usersProvider = FutureProvider.autoDispose<List<AppUser>>((ref) => ref.wat
 /// Après une vente, une production ou une clôture : tout ce qui affiche du stock est relu.
 void invalidateStock(WidgetRef ref) {
   ref
-    ..invalidate(stockProvider)
+    ..invalidate(serverStockProvider)
     ..invalidate(productionTodayProvider)
     ..invalidate(dayClosingProvider)
     ..invalidate(dashboardProvider);

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/api_exception.dart';
 import '../../core/format.dart';
 import '../../core/labels.dart';
 import '../../core/theme.dart';
+import '../../data/outbox.dart';
 import '../../data/providers.dart';
 import '../../models/stock.dart';
 import '../../widgets/async_view.dart';
@@ -51,11 +53,25 @@ class _ProductionScreenState extends ConsumerState<ProductionScreen> {
 
     setState(() => _saving = true);
     try {
-      await ref
-          .read(bakeryApiProvider)
-          .produce([for (final line in lines) (productId: line.product.id, quantity: line.quantity)]);
+      final production = OutboxOperation.create(OutboxKind.production, [
+        for (final line in lines)
+          (
+            productId: line.product.id,
+            quantity: line.quantity,
+            unitPrice: line.product.unitPrice,
+            label: line.product.label(context),
+          ),
+      ]);
+      final result = await ref.read(outboxProvider.notifier).submit(production);
       if (!mounted) return;
-      showSuccess(context, l10n.productionSaved);
+      switch (result.outcome) {
+        case SubmitOutcome.sent:
+          showSuccess(context, l10n.productionSaved);
+        case SubmitOutcome.queued:
+          showQueued(context, l10n.productionQueued);
+        case SubmitOutcome.rejected:
+          showError(context, ApiException(ApiErrorKind.business, message: result.error));
+      }
       setState(_quantities.clear);
       invalidateStock(ref);
     } on Object catch (error) {

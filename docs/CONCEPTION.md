@@ -25,6 +25,7 @@ Les points ambigus de la spécification ont été tranchés ainsi :
 | Comptes | L'owner crée les comptes, réinitialise un PIN et désactive un compte depuis l'appli. Un nouveau PIN ou une désactivation ferme les sessions ouvertes. |
 | Commande `stock:close-day` | Lancée à la main uniquement (rattrapage d'une journée oubliée), pas planifiée. |
 | Même produit, tailles différentes | Taille facultative Petit / Moyen / Grand (mg : Kely / Antonony / Lehibe). Un produit par taille, chacun avec son prix et son stock : « Pain au chocolat · petit » 1 000 Ar, « Pain au chocolat · grand » 1 500 Ar. |
+| Coupure de réseau | Ventes et production sont gardées sur le téléphone puis envoyées au retour du réseau, sans doublon. La clôture attend que tout soit envoyé (voir § 6). |
 
 Choix par défaut, annoncés avant le développement :
 
@@ -361,11 +362,67 @@ les écrans owner.
 
 ---
 
-## 6. Limites connues
+## 6. Mode hors ligne
+
+Le réseau coupe souvent : une vente au comptoir ne doit jamais être perdue ni comptée deux fois.
+
+**Ce qui marche sans connexion**
+
+- **Vente et production** : l'opération reçoit un identifiant unique, est gardée sur le téléphone
+  (`shared_preferences`, elle survit à un redémarrage) et le vendeur voit « gardée sur le téléphone ».
+  Elle garde sa date : une vente faite le 22 au soir et envoyée le 23 au matin compte pour le 22.
+- **Lecture** : accueil, catalogue, stock et production du jour s'affichent depuis la dernière réponse
+  reçue. Le stock affiché retire déjà les ventes en attente et ajoute la production en attente
+  (jamais en dessous de 0).
+- Les autres écrans (clôture, ingrédients, dépenses, rapports…) demandent le réseau, comme avant.
+
+**Envoi**
+
+- Le téléphone vérifie le serveur toutes les 15 secondes quand il est hors ligne, et renvoie la file
+  dès que le serveur répond (au plus tard toutes les 30 secondes), ou sur « Envoyer maintenant ».
+- Les opérations partent **dans l'ordre** : une vente peut dépendre d'une production encore en attente.
+- Un bandeau en haut de l'appli indique « Hors ligne · N en attente d'envoi » ; un toucher ouvre la
+  liste des opérations en attente.
+
+**Pas de doublon : l'idempotence**
+
+Si la connexion coupe *après* l'enregistrement mais *avant* la réponse, le téléphone renverra une
+opération déjà enregistrée. Chaque envoi porte donc l'en-tête `Idempotency-Key` (son identifiant) :
+le serveur garde la réponse de chaque opération réussie (table `idempotency_keys`, par utilisateur)
+et la renvoie telle quelle si la même clé revient, sans rien enregistrer une deuxième fois.
+Seules les réponses réussies sont gardées : une opération refusée peut être corrigée et renvoyée.
+
+**Opération refusée**
+
+Le serveur peut refuser une opération faite hors ligne (stock épuisé entre-temps, journée déjà
+clôturée…). Elle passe alors en rouge dans la liste, avec le message du serveur : on peut la
+réessayer ou la supprimer. Elle ne compte plus dans le stock affiché.
+
+**Clôture**
+
+Le restant compté doit correspondre aux ventes enregistrées sur le serveur. Tant qu'une vente ou une
+production de ce jour (ou d'avant) attend sur le téléphone, la clôture affiche un avertissement et
+le bouton « Valider la clôture » reste désactivé.
+
+**Déconnexion**
+
+Les opérations en attente restent sur le téléphone ; l'appli prévient avant de se déconnecter. Elles
+partent à la prochaine connexion, avec le compte qui se connecte.
+
+---
+
+## 7. Limites connues
 
 - Les textes malgaches (appli et messages de l'API) sont à faire relire par un locuteur natif.
 - Les boutons système du calendrier s'affichent en français quand l'appli est en malgache
   (repli expliqué dans `boulangerie-app/README.md`).
 - Le jeton de session est gardé dans les préférences de l'appli (`shared_preferences`).
   Pour un téléphone partagé, `flutter_secure_storage` serait plus sûr.
-- Pas de mode hors ligne : sans réseau, l'appli affiche l'erreur et un bouton « Réessayer ».
+- Hors ligne, seules la vente et la production sont gardées pour plus tard. Une clôture, un achat
+  d'ingrédient ou une dépense demandent le réseau.
+- Si quelqu'un se déconnecte avec des opérations en attente et qu'un **autre** compte se connecte,
+  elles partent au nom de ce compte. Le cas rare d'une opération déjà enregistrée dont la réponse
+  s'était perdue serait alors enregistrée deux fois (les clés d'idempotence sont propres à chaque
+  compte) : mieux vaut tout envoyer avant de se déconnecter.
+- Une opération faite hors ligne sur un téléphone n'apparaît pas sur les autres téléphones avant
+  son envoi.

@@ -33,12 +33,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('products', ProductController::class);
     Route::get('/stock', [StockController::class, 'index']);
     Route::get('/production', [ProductionController::class, 'index']);
-    Route::post('/production', [ProductionController::class, 'store']);
+    Route::post('/production', [ProductionController::class, 'store'])->middleware('idempotent');
     Route::delete('/production/{stockLot}', [ProductionController::class, 'destroy']);
 
     // Ventes, clôture de journée et invendus.
     Route::get('/sales', [SaleController::class, 'index']);
-    Route::post('/sales', [SaleController::class, 'store']);
+    Route::post('/sales', [SaleController::class, 'store'])->middleware('idempotent');
     Route::get('/day-closing/{date}', [DayClosingController::class, 'show']);
     Route::post('/day-closing/{date}', [DayClosingController::class, 'store']);
     Route::delete('/day-closing/{date}', [DayClosingController::class, 'destroy']);

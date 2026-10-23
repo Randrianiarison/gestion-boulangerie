@@ -808,5 +808,63 @@ class AppLocalizationsMg extends AppLocalizations {
   String get invalidPin => 'Tarehimarika 4 ka hatramin\'ny 6';
 
   @override
+  String get offline => 'Tsy misy fifandraisana';
+
+  @override
+  String pendingOps(String count) {
+    return '$count miandry halefa';
+  }
+
+  @override
+  String rejectedOps(String count) {
+    return '$count nolavin\'ny serveur : jereo';
+  }
+
+  @override
+  String saleQueued(String amount) {
+    return 'Tsy misy fifandraisana : voatahiry ao amin\'ny finday ny varotra $amount, halefa rehefa miverina ny tambajotra.';
+  }
+
+  @override
+  String get productionQueued =>
+      'Tsy misy fifandraisana : voatahiry ao amin\'ny finday ny famokarana, halefa rehefa miverina ny tambajotra.';
+
+  @override
+  String get outboxTitle => 'Miandry halefa';
+
+  @override
+  String get outboxHint =>
+      'Eto no voatahiry ny varotra sy ny famokarana natao tsy nisy fifandraisana, ary halefa ho azy rehefa mamaly ny serveur.';
+
+  @override
+  String get outboxEmpty => 'Lasa daholo ny zavatra rehetra.';
+
+  @override
+  String get outboxSendNow => 'Alefaso izao';
+
+  @override
+  String get outboxStillOffline =>
+      'Mbola tsy misy fifandraisana. Hiezaka indray ho azy afaka segondra vitsivitsy.';
+
+  @override
+  String get outboxPending => 'Miandry';
+
+  @override
+  String get outboxRejected => 'Nolavina';
+
+  @override
+  String get outboxDiscardConfirm => 'Hofafana ve ity? Tsy halefa mihitsy izy.';
+
+  @override
+  String closingPendingOps(String count) {
+    return '$count mbola tsy lasa : alefaso aloha vao manakatona, raha tsy izany diso ny kajy.';
+  }
+
+  @override
+  String logoutPendingOps(String count) {
+    return '$count miandry halefa amin\'ny fidirana manaraka.';
+  }
+
+  @override
   String get invalidUrl => 'Diso ny adiresy';
 }

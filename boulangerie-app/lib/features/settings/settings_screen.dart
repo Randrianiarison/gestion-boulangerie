@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/format.dart';
 import '../../core/labels.dart';
 import '../../core/settings.dart';
 import '../../core/theme.dart';
+import '../../data/outbox.dart';
 import '../../widgets/dialogs.dart';
 import '../../widgets/language_switch.dart';
 import '../auth/auth_controller.dart';
@@ -49,9 +51,15 @@ class SettingsScreen extends ConsumerWidget {
           OutlinedButton.icon(
             style: OutlinedButton.styleFrom(foregroundColor: AppColors.danger),
             onPressed: () async {
-              if (await confirmDialog(context, title: l10n.logoutConfirm, confirmLabel: l10n.logout, danger: true)) {
-                await ref.read(authProvider.notifier).logout();
-              }
+              final pending = ref.read(outboxProvider).where((operation) => operation.isPending).length;
+              final confirmed = await confirmDialog(
+                context,
+                title: l10n.logoutConfirm,
+                content: pending == 0 ? null : Text(l10n.logoutPendingOps(formatInt(pending))),
+                confirmLabel: l10n.logout,
+                danger: true,
+              );
+              if (confirmed) await ref.read(authProvider.notifier).logout();
             },
             icon: const Icon(Icons.logout_rounded),
             label: Text(l10n.logout),

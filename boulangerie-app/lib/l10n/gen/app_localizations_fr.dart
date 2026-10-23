@@ -806,5 +806,64 @@ class AppLocalizationsFr extends AppLocalizations {
   String get invalidPin => '4 à 6 chiffres';
 
   @override
+  String get offline => 'Hors ligne';
+
+  @override
+  String pendingOps(String count) {
+    return '$count en attente d\'envoi';
+  }
+
+  @override
+  String rejectedOps(String count) {
+    return '$count refusée(s) par le serveur : à vérifier';
+  }
+
+  @override
+  String saleQueued(String amount) {
+    return 'Pas de connexion : vente de $amount gardée sur le téléphone, envoyée dès le retour du réseau.';
+  }
+
+  @override
+  String get productionQueued =>
+      'Pas de connexion : production gardée sur le téléphone, envoyée dès le retour du réseau.';
+
+  @override
+  String get outboxTitle => 'En attente d\'envoi';
+
+  @override
+  String get outboxHint =>
+      'Les ventes et la production faites sans connexion sont gardées ici, puis envoyées automatiquement dès que le serveur répond.';
+
+  @override
+  String get outboxEmpty => 'Tout est envoyé.';
+
+  @override
+  String get outboxSendNow => 'Envoyer maintenant';
+
+  @override
+  String get outboxStillOffline =>
+      'Toujours pas de connexion. Nouvel essai automatique dans quelques secondes.';
+
+  @override
+  String get outboxPending => 'En attente';
+
+  @override
+  String get outboxRejected => 'Refusée';
+
+  @override
+  String get outboxDiscardConfirm =>
+      'Supprimer cette opération ? Elle ne sera jamais envoyée.';
+
+  @override
+  String closingPendingOps(String count) {
+    return '$count opération(s) pas encore envoyée(s) : envoyez-les avant de clôturer, sinon le compte serait faux.';
+  }
+
+  @override
+  String logoutPendingOps(String count) {
+    return '$count opération(s) en attente seront envoyées à la prochaine connexion.';
+  }
+
+  @override
   String get invalidUrl => 'Adresse invalide';
 }

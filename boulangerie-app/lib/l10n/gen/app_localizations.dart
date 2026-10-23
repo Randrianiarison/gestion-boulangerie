@@ -1592,6 +1592,96 @@ abstract class AppLocalizations {
   /// **'4 à 6 chiffres'**
   String get invalidPin;
 
+  /// No description provided for @offline.
+  ///
+  /// In fr, this message translates to:
+  /// **'Hors ligne'**
+  String get offline;
+
+  /// No description provided for @pendingOps.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} en attente d\'envoi'**
+  String pendingOps(String count);
+
+  /// No description provided for @rejectedOps.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} refusée(s) par le serveur : à vérifier'**
+  String rejectedOps(String count);
+
+  /// No description provided for @saleQueued.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pas de connexion : vente de {amount} gardée sur le téléphone, envoyée dès le retour du réseau.'**
+  String saleQueued(String amount);
+
+  /// No description provided for @productionQueued.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pas de connexion : production gardée sur le téléphone, envoyée dès le retour du réseau.'**
+  String get productionQueued;
+
+  /// No description provided for @outboxTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'En attente d\'envoi'**
+  String get outboxTitle;
+
+  /// No description provided for @outboxHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les ventes et la production faites sans connexion sont gardées ici, puis envoyées automatiquement dès que le serveur répond.'**
+  String get outboxHint;
+
+  /// No description provided for @outboxEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tout est envoyé.'**
+  String get outboxEmpty;
+
+  /// No description provided for @outboxSendNow.
+  ///
+  /// In fr, this message translates to:
+  /// **'Envoyer maintenant'**
+  String get outboxSendNow;
+
+  /// No description provided for @outboxStillOffline.
+  ///
+  /// In fr, this message translates to:
+  /// **'Toujours pas de connexion. Nouvel essai automatique dans quelques secondes.'**
+  String get outboxStillOffline;
+
+  /// No description provided for @outboxPending.
+  ///
+  /// In fr, this message translates to:
+  /// **'En attente'**
+  String get outboxPending;
+
+  /// No description provided for @outboxRejected.
+  ///
+  /// In fr, this message translates to:
+  /// **'Refusée'**
+  String get outboxRejected;
+
+  /// No description provided for @outboxDiscardConfirm.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer cette opération ? Elle ne sera jamais envoyée.'**
+  String get outboxDiscardConfirm;
+
+  /// No description provided for @closingPendingOps.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} opération(s) pas encore envoyée(s) : envoyez-les avant de clôturer, sinon le compte serait faux.'**
+  String closingPendingOps(String count);
+
+  /// No description provided for @logoutPendingOps.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count} opération(s) en attente seront envoyées à la prochaine connexion.'**
+  String logoutPendingOps(String count);
+
   /// No description provided for @invalidUrl.
   ///
   /// In fr, this message translates to:

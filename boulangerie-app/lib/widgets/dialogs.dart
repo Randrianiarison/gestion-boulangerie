@@ -46,6 +46,21 @@ void showSuccess(BuildContext context, String message) {
     ));
 }
 
+/// Opération gardée sur le téléphone faute de réseau : orange, ce n'est pas une erreur.
+void showQueued(BuildContext context, String message) {
+  ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(SnackBar(
+      backgroundColor: AppColors.warning,
+      duration: const Duration(seconds: 6),
+      content: Row(children: [
+        const Icon(Icons.cloud_off_rounded, color: Colors.white),
+        const SizedBox(width: 12),
+        Expanded(child: Text(message, style: const TextStyle(fontSize: 16))),
+      ]),
+    ));
+}
+
 void showError(BuildContext context, Object error) {
   ScaffoldMessenger.of(context)
     ..hideCurrentSnackBar()

@@ -3,13 +3,16 @@ import 'dart:convert';
 
 import 'package:boulangerie_app/app.dart';
 import 'package:boulangerie_app/core/api_client.dart';
+import 'package:boulangerie_app/core/api_exception.dart';
 import 'package:boulangerie_app/core/settings.dart';
 import 'package:boulangerie_app/data/bakery_api.dart';
+import 'package:boulangerie_app/data/outbox.dart';
 import 'package:boulangerie_app/data/providers.dart';
 import 'package:boulangerie_app/models/dashboard.dart';
 import 'package:boulangerie_app/models/employee.dart';
 import 'package:boulangerie_app/models/expense.dart';
 import 'package:boulangerie_app/models/ingredient.dart';
+import 'package:boulangerie_app/models/json.dart';
 import 'package:boulangerie_app/models/report.dart';
 import 'package:boulangerie_app/models/stock.dart';
 import 'package:boulangerie_app/models/user.dart';
@@ -89,6 +92,17 @@ final _owner = {'id': 1, 'name': 'Propriétaire', 'phone': '0340000001', 'role':
 class _FakeApi extends BakeryApi {
   _FakeApi()
       : super(ApiClient(baseUrl: () => 'http://test', token: () => null, languageCode: () => 'fr', onUnauthorized: () {}));
+
+  /// Simule une coupure : les ventes et productions ne peuvent plus partir.
+  bool offline = false;
+  final List<OutboxOperation> sent = [];
+
+  @override
+  Future<Json> sendOperation(OutboxOperation operation) async {
+    if (offline) throw const ApiException(ApiErrorKind.network);
+    sent.add(operation);
+    return const {};
+  }
 
   @override
   Future<Dashboard> dashboard() async => Dashboard.fromJson({
@@ -231,7 +245,7 @@ class _FakeApi extends BakeryApi {
       ];
 }
 
-Future<ProviderContainer> _startAsOwner(WidgetTester tester, String locale) async {
+Future<ProviderContainer> _startAsOwner(WidgetTester tester, String locale, {_FakeApi? api}) async {
   // Taille d'un téléphone courant : 360 × 800.
   tester.view.physicalSize = const Size(1080, 2400);
   tester.view.devicePixelRatio = 3;
@@ -247,7 +261,7 @@ Future<ProviderContainer> _startAsOwner(WidgetTester tester, String locale) asyn
   await tester.pumpWidget(ProviderScope(
     overrides: [
       sharedPreferencesProvider.overrideWithValue(prefs),
-      bakeryApiProvider.overrideWithValue(_FakeApi()),
+      bakeryApiProvider.overrideWithValue(api ?? _FakeApi()),
     ],
     retry: (retryCount, error) => null,
     child: const BoulangerieApp(),
@@ -255,6 +269,29 @@ Future<ProviderContainer> _startAsOwner(WidgetTester tester, String locale) asyn
   await tester.pumpAndSettle();
 
   return ProviderScope.containerOf(tester.element(find.byType(BoulangerieApp)));
+}
+
+/// Un « − » encore actif sur l'écran de clôture (le produit n'est pas encore compté à 0).
+Finder _enabledMinus() => find.byWidgetPredicate(
+      (widget) =>
+          widget is IconButton &&
+          widget.onPressed != null &&
+          widget.icon is Icon &&
+          (widget.icon as Icon).icon == Icons.remove_rounded,
+    );
+
+/// Fait défiler jusqu'au prochain « − » actif, puis le touche.
+/// (scrollUntilVisible ne convient pas : avec `.first`, il échoue tant que la carte n'est pas encore construite.)
+Future<void> _tapNextEnabledMinus(WidgetTester tester) async {
+  for (var drags = 0; _enabledMinus().evaluate().isEmpty; drags++) {
+    if (drags == 20) fail('Aucun « − » actif dans la liste de clôture');
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, -200));
+    await tester.pumpAndSettle();
+  }
+  await tester.ensureVisible(_enabledMinus().first);
+  await tester.pumpAndSettle();
+  await tester.tap(_enabledMinus().first);
+  await tester.pumpAndSettle();
 }
 
 void main() {
@@ -333,6 +370,76 @@ void main() {
     expect(find.text('1 500 Ar'), findsNWidgets(2));
   });
 
+  testWidgets('hors ligne : la vente est gardée, le stock en tient compte, puis elle part au retour du réseau',
+      (tester) async {
+    final api = _FakeApi()..offline = true;
+    final container = await _startAsOwner(tester, 'fr', api: api);
+    unawaited(container.read(routerProvider).push(Routes.sale));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Baguette'));
+    await tester.tap(find.text('Baguette'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Valider la vente'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.descendant(of: find.byType(AlertDialog), matching: find.text('Valider la vente')));
+    await tester.pumpAndSettle();
+
+    // Rien n'est perdu : la vente attend sur le téléphone, et le stock affiché la déduit déjà.
+    expect(find.textContaining('gardée sur le téléphone'), findsOneWidget);
+    expect(container.read(outboxProvider), hasLength(1));
+    expect(find.textContaining("1 en attente d'envoi"), findsOneWidget);
+    expect(find.text('Dispo : 43'), findsOneWidget); // 45 - 2
+
+    // Le réseau revient : la vente part, une seule fois, avec son identifiant.
+    api.offline = false;
+    await container.read(outboxProvider.notifier).flush();
+    await tester.pumpAndSettle();
+
+    expect(container.read(outboxProvider), isEmpty);
+    expect(api.sent.single.kind, OutboxKind.sale);
+    expect(api.sent.single.total, 1600);
+    expect(find.textContaining("en attente d'envoi"), findsNothing);
+  });
+
+  testWidgets('hors ligne : la production est gardée aussi', (tester) async {
+    final api = _FakeApi()..offline = true;
+    final container = await _startAsOwner(tester, 'mg', api: api);
+    unawaited(container.read(routerProvider).push(Routes.production));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.add_rounded).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('Tehirizo ny famokarana'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.descendant(of: find.byType(AlertDialog), matching: find.text('Eny')));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('voatahiry ao amin\'ny finday ny famokarana'), findsOneWidget);
+    expect(container.read(outboxProvider).single.kind, OutboxKind.production);
+  });
+
+  testWidgets('la clôture attend que les ventes en attente soient envoyées', (tester) async {
+    final api = _FakeApi()..offline = true;
+    final container = await _startAsOwner(tester, 'fr', api: api);
+    await container.read(outboxProvider.notifier).submit(OutboxOperation.create(
+      OutboxKind.sale,
+      [(productId: 1, quantity: 2, unitPrice: 800, label: 'Baguette')],
+    ));
+    unawaited(container.read(routerProvider).push(Routes.closing));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('pas encore envoyée'), findsOneWidget);
+
+    // Même tout compté, la validation reste bloquée.
+    for (var i = 0; i < 3; i++) {
+      await _tapNextEnabledMinus(tester);
+    }
+    expect(_enabledMinus(), findsNothing);
+    final validate = find.widgetWithText(FilledButton, 'Valider la clôture');
+    expect(tester.widget<FilledButton>(validate).onPressed, isNull);
+  });
+
   testWidgets('clôture : validation possible seulement quand tout est compté, avec aperçu', (tester) async {
     final container = await _startAsOwner(tester, 'fr');
     unawaited(container.read(routerProvider).push(Routes.closing));
@@ -343,19 +450,10 @@ void main() {
     expect(find.text('Comptez tous les produits pour valider'), findsOneWidget);
 
     // « − » sur un produit pas encore compté = il ne reste rien (le bouton se désactive ensuite à 0).
-    Finder enabledMinus() => find.byWidgetPredicate(
-          (widget) =>
-              widget is IconButton &&
-              widget.onPressed != null &&
-              widget.icon is Icon &&
-              (widget.icon as Icon).icon == Icons.remove_rounded,
-        );
     for (var i = 0; i < 3; i++) {
-      await tester.scrollUntilVisible(enabledMinus().first, 200, scrollable: find.byType(Scrollable).first);
-      await tester.tap(enabledMinus().first);
-      await tester.pumpAndSettle();
+      await _tapNextEnabledMinus(tester);
     }
-    expect(enabledMinus(), findsNothing);
+    expect(_enabledMinus(), findsNothing);
 
     expect(tester.widget<FilledButton>(validate).onPressed, isNotNull);
     // Tout vendu : 45 × 800 + 30 × 3 000 + 8 × 4 000.

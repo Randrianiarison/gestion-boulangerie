@@ -11,6 +11,7 @@ import 'features/expenses/expenses_screen.dart';
 import 'features/home/home_screen.dart';
 import 'features/ingredients/ingredient_detail_screen.dart';
 import 'features/ingredients/ingredients_screen.dart';
+import 'features/outbox/outbox_screen.dart';
 import 'features/production/production_screen.dart';
 import 'features/products/products_screen.dart';
 import 'features/reports/reports_screen.dart';
@@ -32,6 +33,7 @@ abstract final class Routes {
   static const products = '/products';
   static const users = '/users';
   static const settings = '/settings';
+  static const outbox = '/outbox';
 
   static String ingredient(int id) => '$ingredients/$id';
 
@@ -90,6 +92,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: Routes.products, builder: (context, state) => const ProductsScreen()),
       GoRoute(path: Routes.users, builder: (context, state) => const UsersScreen()),
       GoRoute(path: Routes.settings, builder: (context, state) => const SettingsScreen()),
+      GoRoute(path: Routes.outbox, builder: (context, state) => const OutboxScreen()),
     ],
   );
 });

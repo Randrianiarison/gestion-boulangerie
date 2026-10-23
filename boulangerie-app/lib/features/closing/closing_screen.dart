@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/format.dart';
 import '../../core/labels.dart';
 import '../../core/theme.dart';
+import '../../data/outbox.dart';
 import '../../data/providers.dart';
+import '../../router.dart';
 import '../../models/stock.dart';
 import '../../widgets/async_view.dart';
 import '../../widgets/cards.dart';
@@ -132,6 +135,11 @@ class _ClosingScreenState extends ConsumerState<ClosingScreen> {
     final l10n = context.l10n;
     final state = ref.watch(dayClosingProvider(_date));
     final rows = state.value?.canClose == true ? state.value!.items : const <StockRow>[];
+    // Une vente pas encore reçue par le serveur fausserait le calcul « vendu = disponible − restant ».
+    final pendingOps = ref
+        .watch(outboxProvider)
+        .where((operation) => operation.isPending && !operation.date.isAfter(_date))
+        .length;
 
     return Scaffold(
       appBar: AppBar(
@@ -172,12 +180,28 @@ class _ClosingScreenState extends ConsumerState<ClosingScreen> {
                     text: state.blockedReason == 'future_date' ? l10n.closingBlockedFuture : l10n.closingBlockedPeriod,
                   );
                 }
+                // Dans la liste (et non figé en haut) : sur un petit écran, il ne cache pas les produits.
+                final pendingWarning = pendingOps == 0
+                    ? null
+                    : Card(
+                        color: AppColors.warning.withValues(alpha: 0.15),
+                        child: ListTile(
+                          leading: const Icon(Icons.cloud_upload_rounded, color: AppColors.warning, size: 32),
+                          title: Text(l10n.closingPendingOps(formatInt(pendingOps))),
+                          trailing: const Icon(Icons.chevron_right_rounded),
+                          onTap: () => context.push(Routes.outbox),
+                        ),
+                      );
                 if (state.items.isEmpty) {
-                  return _Message(icon: Icons.inventory_2_outlined, text: l10n.closingNothingToCount);
+                  return ListView(padding: const EdgeInsets.all(16), children: [
+                    ?pendingWarning,
+                    _Message(icon: Icons.inventory_2_outlined, text: l10n.closingNothingToCount),
+                  ]);
                 }
                 return ListView(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 160),
                   children: [
+                    if (pendingWarning != null) ...[pendingWarning, const SizedBox(height: 12)],
                     Text(l10n.closingInstructions, style: Theme.of(context).textTheme.titleMedium),
                     const SizedBox(height: 12),
                     for (final row in state.items)
@@ -197,7 +221,7 @@ class _ClosingScreenState extends ConsumerState<ClosingScreen> {
       bottomNavigationBar: state.value?.canClose == true
           ? _ValidateBar(
               preview: _preview(rows),
-              ready: _allCounted(rows),
+              ready: _allCounted(rows) && pendingOps == 0,
               saving: _saving,
               onValidate: () => _validate(rows),
             )

@@ -76,5 +76,7 @@ class AuthNotifier extends Notifier<AuthState> {
     final prefs = ref.read(sharedPreferencesProvider);
     await prefs.remove(_tokenKey);
     await prefs.remove(_userKey);
+    // Les chiffres gardés pour le mode hors ligne ne doivent pas rester visibles au compte suivant.
+    await ref.read(responseCacheProvider).clear();
   }
 }

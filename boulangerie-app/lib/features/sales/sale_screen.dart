@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/api_exception.dart';
 import '../../core/format.dart';
 import '../../core/labels.dart';
 import '../../core/theme.dart';
+import '../../data/outbox.dart';
 import '../../data/providers.dart';
 import '../../models/stock.dart';
 import '../../widgets/async_view.dart';
@@ -66,11 +68,25 @@ class _SaleScreenState extends ConsumerState<SaleScreen> {
 
     setState(() => _saving = true);
     try {
-      final paid = await ref
-          .read(bakeryApiProvider)
-          .sell([for (final row in lines) (productId: row.product.id, quantity: _cart[row.product.id]!)]);
+      final sale = OutboxOperation.create(OutboxKind.sale, [
+        for (final row in lines)
+          (
+            productId: row.product.id,
+            quantity: _cart[row.product.id]!,
+            unitPrice: row.product.unitPrice,
+            label: row.product.label(context),
+          ),
+      ]);
+      final result = await ref.read(outboxProvider.notifier).submit(sale);
       if (!mounted) return;
-      showSuccess(context, l10n.saleSaved(formatMoney(paid)));
+      switch (result.outcome) {
+        case SubmitOutcome.sent:
+          showSuccess(context, l10n.saleSaved(formatMoney(sale.total)));
+        case SubmitOutcome.queued:
+          showQueued(context, l10n.saleQueued(formatMoney(sale.total)));
+        case SubmitOutcome.rejected:
+          showError(context, ApiException(ApiErrorKind.business, message: result.error));
+      }
       setState(_cart.clear);
       invalidateStock(ref);
     } on Object catch (error) {
@@ -101,7 +117,7 @@ class _SaleScreenState extends ConsumerState<SaleScreen> {
       ),
       body: AsyncView(
         value: stock,
-        onRetry: () => ref.invalidate(stockProvider),
+        onRetry: () => ref.invalidate(serverStockProvider),
         builder: (_) => LayoutBuilder(builder: (context, constraints) {
           return GridView.builder(
             padding: const EdgeInsets.all(12),

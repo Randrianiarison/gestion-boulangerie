@@ -7,6 +7,7 @@ import 'core/theme.dart';
 import 'l10n/fallback_localizations.dart';
 import 'l10n/gen/app_localizations.dart';
 import 'router.dart';
+import 'widgets/offline_banner.dart';
 
 class BoulangerieApp extends ConsumerWidget {
   const BoulangerieApp({super.key});
@@ -28,6 +29,8 @@ class BoulangerieApp extends ConsumerWidget {
         GlobalWidgetsLocalizations.delegate,
       ],
       routerConfig: ref.watch(routerProvider),
+      // Hors ligne ou opérations en attente : bandeau visible sur tous les écrans.
+      builder: (context, child) => OfflineBanner(child: child ?? const SizedBox.shrink()),
     );
   }
 }

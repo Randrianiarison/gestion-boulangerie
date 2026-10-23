@@ -127,6 +127,22 @@ Chaque erreur métier renvoie aussi un `code` stable :
 
 Les traductions malgaches (`lang/mg`) sont à faire relire par un locuteur natif.
 
+## Renvoi sans doublon (`Idempotency-Key`)
+
+L'appli garde les ventes et la production faites sans connexion, puis les renvoie. Pour qu'un renvoi
+ne crée pas de doublon, `POST /sales` et `POST /production` acceptent l'en-tête
+`Idempotency-Key` (8 à 64 caractères : lettres, chiffres, tirets) :
+
+- première fois : l'opération est enregistrée et, si elle réussit, sa réponse est gardée
+  (table `idempotency_keys`, par utilisateur) ;
+- même clé une deuxième fois : la réponse gardée est renvoyée telle quelle, avec l'en-tête
+  `Idempotent-Replayed: true`, et rien n'est enregistré ;
+- une opération refusée (stock insuffisant, journée clôturée…) n'est pas gardée : on peut la corriger
+  et la renvoyer avec la même clé.
+
+Les clés de plus de 30 jours peuvent être effacées avec `php artisan model:prune`
+(par exemple une tâche planifiée par mois sur l'hébergeur).
+
 ## Routes
 
 Toutes sont préfixées par `/api`, échangent du JSON et demandent un jeton Sanctum
@@ -142,10 +158,10 @@ Toutes sont préfixées par `/api`, échangent du JSON et demandent un jeton San
 | POST/PUT/DELETE | `/products/{id}` | owner | Gestion du catalogue |
 | GET | `/stock` (`?date=`) | tous | Disponible par produit |
 | GET | `/production` (`?date=`) | tous | Lots produits ce jour-là |
-| POST | `/production` | tous | `{produced_on?, items:[{product_id, quantity}]}` → un lot par produit |
+| POST | `/production` | tous | `{produced_on?, items:[{product_id, quantity}]}` → un lot par produit ; `Idempotency-Key` accepté |
 | DELETE | `/production/{lot}` | tous | Supprime un lot encore intact (erreur de saisie) |
 | GET | `/sales?from=&to=` | tous | Ventes et totaux |
-| POST | `/sales` | tous | Vente au comptoir `{sold_on?, items:[{product_id, quantity}]}` |
+| POST | `/sales` | tous | Vente au comptoir `{sold_on?, items:[{product_id, quantity}]}` ; `Idempotency-Key` accepté |
 | GET | `/day-closing/{date}` | tous | Disponible à compter, ou résumé si déjà clôturée |
 | POST | `/day-closing/{date}` | tous | `{items:[{product_id, remaining, recovered_amount?}]}` |
 | DELETE | `/day-closing/{date}` | owner | Annule la dernière clôture pour recompter |

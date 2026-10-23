@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\ForceJsonResponse;
+use App\Http\Middleware\Idempotent;
 use App\Http\Middleware\SetLocaleFromHeader;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
@@ -22,6 +23,9 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         // Hébergement derrière un proxy (alwaysdata…) : HTTPS et IP du client lus dans les en-têtes X-Forwarded-*.
         $middleware->trustProxies(at: '*');
+
+        // Ventes et production envoyées par l'appli hors ligne : jamais enregistrées deux fois.
+        $middleware->alias(['idempotent' => Idempotent::class]);
 
         $middleware->api(prepend: [
             ForceJsonResponse::class,

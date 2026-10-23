@@ -1,5 +1,7 @@
 import '../core/api_client.dart';
+import '../core/api_exception.dart';
 import '../core/format.dart';
+import '../core/response_cache.dart';
 import '../models/dashboard.dart';
 import '../models/employee.dart';
 import '../models/expense.dart';
@@ -8,18 +10,47 @@ import '../models/json.dart';
 import '../models/report.dart';
 import '../models/stock.dart';
 import '../models/user.dart';
-
-/// Une ligne « produit + quantité » (production, vente au comptoir).
-typedef QuantityLine = ({int productId, int quantity});
+import 'outbox.dart';
 
 /// Une ligne de comptage du soir.
 typedef CountLine = ({int productId, int remaining, int? recoveredAmount});
 
 /// Appels typés à l'API de la boulangerie.
 class BakeryApi {
-  const BakeryApi(this._client);
+  const BakeryApi(this._client, {ResponseCache? cache, bool Function()? isOnline})
+      : _cache = cache,
+        _isOnline = isOnline;
 
   final ApiClient _client;
+  final ResponseCache? _cache;
+  final bool Function()? _isOnline;
+
+  /// Lecture avec repli hors ligne : si le serveur est injoignable, la dernière réponse reçue est
+  /// rendue. Quand on sait déjà être hors ligne, on ne fait même pas attendre le délai réseau.
+  Future<Json> _readWithFallback(String cacheKey, String path, {Map<String, dynamic>? query}) async {
+    final cache = _cache;
+    if (cache != null && _isOnline?.call() == false) {
+      final cached = cache.read(cacheKey);
+      if (cached != null) return cached;
+    }
+
+    try {
+      final data = await _client.get(path, query: query);
+      await cache?.write(cacheKey, data);
+      return data;
+    } on ApiException catch (e) {
+      final cached = e.isConnectivityProblem ? cache?.read(cacheKey) : null;
+      if (cached == null) rethrow;
+      return cached;
+    }
+  }
+
+  /// Appel léger pour savoir si le serveur répond de nouveau.
+  Future<void> ping() => _client.get('/me');
+
+  /// Vente ou production (directe ou en attente) ; l'identifiant évite tout doublon côté serveur.
+  Future<Json> sendOperation(OutboxOperation operation) =>
+      _client.post(operation.path, operation.body, {'Idempotency-Key': operation.id});
 
   // Auth -------------------------------------------------------------------
 
@@ -34,34 +65,29 @@ class BakeryApi {
 
   // Tableau de bord, produits, stock ---------------------------------------
 
-  Future<Dashboard> dashboard() async => Dashboard.fromJson(await _client.get('/dashboard'));
+  Future<Dashboard> dashboard() async => Dashboard.fromJson(await _readWithFallback('dashboard', '/dashboard'));
 
-  Future<List<Product>> products({bool activeOnly = false}) async =>
-      asList((await _client.get('/products', query: {'active': activeOnly ? 1 : null}))['data'], Product.fromJson);
+  Future<List<Product>> products({bool activeOnly = false}) async => asList(
+        (await _readWithFallback('products:${activeOnly ? 'active' : 'all'}', '/products',
+            query: {'active': activeOnly ? 1 : null}))['data'],
+        Product.fromJson,
+      );
 
   Future<void> saveProduct(int? id, Json data) =>
       id == null ? _client.post('/products', data) : _client.put('/products/$id', data);
 
-  Future<List<StockRow>> stock() async => asList((await _client.get('/stock'))['data'], StockRow.fromJson);
+  Future<List<StockRow>> stock() async =>
+      asList((await _readWithFallback('stock', '/stock'))['data'], StockRow.fromJson);
 
   // Production, ventes, clôture, invendus ----------------------------------
+  // Ventes au comptoir et production passent par la file d'attente (data/outbox.dart).
 
-  Future<List<StockLot>> productionOn(DateTime date) async =>
-      asList((await _client.get('/production', query: {'date': isoDate(date)}))['data'], StockLot.fromJson);
-
-  Future<void> produce(List<QuantityLine> lines) => _client.post('/production', {
-        'items': [for (final line in lines) {'product_id': line.productId, 'quantity': line.quantity}],
-      });
+  Future<List<StockLot>> productionOn(DateTime date) async => asList(
+        (await _readWithFallback('production:${isoDate(date)}', '/production', query: {'date': isoDate(date)}))['data'],
+        StockLot.fromJson,
+      );
 
   Future<void> deleteLot(int lotId) => _client.delete('/production/$lotId');
-
-  /// Renvoie le total encaissé.
-  Future<int> sell(List<QuantityLine> lines) async {
-    final response = await _client.post('/sales', {
-      'items': [for (final line in lines) {'product_id': line.productId, 'quantity': line.quantity}],
-    });
-    return asInt(response['total']);
-  }
 
   Future<DayClosingState> dayClosing(DateTime date) async =>
       DayClosingState.fromJson(asJson((await _client.get('/day-closing/${isoDate(date)}'))['data']));

@@ -36,6 +36,13 @@ class ApiException implements Exception {
   final Map<String, dynamic> params;
   final Map<String, List<String>> fieldErrors;
 
+  /// Serveur injoignable ou en panne : une opération faite hors ligne doit être gardée et renvoyée plus tard.
+  /// Un refus métier (stock épuisé, journée clôturée…) ne l'est pas : le renvoyer ne changerait rien.
+  bool get isConnectivityProblem => switch (kind) {
+        ApiErrorKind.network || ApiErrorKind.timeout || ApiErrorKind.server || ApiErrorKind.badResponse => true,
+        _ => false,
+      };
+
   factory ApiException.fromDio(DioException e) {
     switch (e.type) {
       case DioExceptionType.connectionTimeout:
