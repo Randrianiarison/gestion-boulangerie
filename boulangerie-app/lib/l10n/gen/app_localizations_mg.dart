@@ -244,6 +244,26 @@ class AppLocalizationsMg extends AppLocalizations {
   String get sizeLarge => 'Lehibe';
 
   @override
+  String get volume => 'Haben\'ny tavoahangy';
+
+  @override
+  String get volumeHelp =>
+      'Amidy isaky ny tavoahangy ny ranom-boankazo : fiche iray isaky ny ranom-boankazo sy ny tavoahangy, samy manana ny vidiny.';
+
+  @override
+  String get volumeOther => 'Hafa…';
+
+  @override
+  String get volumeAsk => 'Haben\'ny tavoahangy amin\'ny santilitatra (cl)';
+
+  @override
+  String get volumeRequired => 'Safidio ny haben\'ny tavoahangy';
+
+  @override
+  String get glassLegacy =>
+      'Vokatra taloha amidy isaky ny vera. Amidy isaky ny tavoahangy izao ny ranom-boankazo : mamorona tavoahangy no tsara kokoa.';
+
+  @override
   String get categoryBread => 'Mofo';
 
   @override

@@ -244,6 +244,26 @@ class AppLocalizationsFr extends AppLocalizations {
   String get sizeLarge => 'Grand';
 
   @override
+  String get volume => 'Contenance de la bouteille';
+
+  @override
+  String get volumeHelp =>
+      'Les jus se vendent à la bouteille : une fiche par jus et par bouteille, chacune avec son prix.';
+
+  @override
+  String get volumeOther => 'Autre…';
+
+  @override
+  String get volumeAsk => 'Contenance en centilitres (cl)';
+
+  @override
+  String get volumeRequired => 'Choisissez la contenance de la bouteille';
+
+  @override
+  String get glassLegacy =>
+      'Ancien produit vendu au verre. Les jus se vendent maintenant à la bouteille : créez plutôt une bouteille.';
+
+  @override
   String get categoryBread => 'Pain';
 
   @override

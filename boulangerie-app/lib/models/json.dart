@@ -5,6 +5,8 @@ typedef Json = Map<String, dynamic>;
 /// Laravel encode 0.0 en 0 : on lit toujours les nombres via `num`.
 int asInt(Object? value) => (value as num).toInt();
 
+int? asIntOrNull(Object? value) => value == null ? null : asInt(value);
+
 double asDouble(Object? value) => (value as num).toDouble();
 
 DateTime asDate(Object? value) => parseIsoDate(value as String);

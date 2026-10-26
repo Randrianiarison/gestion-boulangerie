@@ -180,7 +180,14 @@ class _ReportBody extends StatelessWidget {
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: CircleAvatar(child: Text('${index + 1}')),
-                      title: Text(productLabel(context, nameFr: product.nameFr, nameMg: product.nameMg, format: product.format, size: product.size)),
+                      title: Text(productLabel(
+                        context,
+                        nameFr: product.nameFr,
+                        nameMg: product.nameMg,
+                        format: product.format,
+                        size: product.size,
+                        volumeMl: product.volumeMl,
+                      )),
                       subtitle: Text('× ${formatInt(product.quantity)}'),
                       trailing: Text(formatMoney(product.revenue), style: const TextStyle(fontWeight: FontWeight.bold)),
                     ),

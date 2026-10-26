@@ -5,6 +5,7 @@ import '../../core/format.dart';
 import '../../core/labels.dart';
 import '../../core/theme.dart';
 import '../../data/providers.dart';
+import '../../l10n/gen/app_localizations.dart';
 import '../../models/stock.dart';
 import '../../widgets/async_view.dart';
 import '../../widgets/cards.dart';
@@ -91,8 +92,16 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
   late ProductCategory _category = widget.product?.category ?? ProductCategory.bread;
   late ProductFormat _format = widget.product?.format ?? ProductFormat.piece;
   late ProductSize? _size = widget.product?.size;
+  late int? _volumeMl = widget.product?.volumeMl;
   late bool _active = widget.product?.active ?? true;
+  bool _volumeMissing = false;
   bool _saving = false;
+
+  /// Contenances proposées d'un toucher ; « Autre… » pour le reste.
+  static const _commonVolumes = [250, 330, 500, 750, 1000, 1500, 2000];
+
+  /// Ancien jus au verre : il garde son format (historique), mais on n'en crée plus.
+  bool get _isOldGlass => widget.product?.format == ProductFormat.glass;
 
   @override
   void dispose() {
@@ -104,7 +113,9 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
   }
 
   Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) return;
+    final volumeMissing = _format == ProductFormat.bottle && _volumeMl == null;
+    setState(() => _volumeMissing = volumeMissing);
+    if (!_formKey.currentState!.validate() || volumeMissing) return;
     setState(() => _saving = true);
     try {
       await ref.read(bakeryApiProvider).saveProduct(widget.product?.id, {
@@ -113,6 +124,7 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
         'name_mg': _nameMg.text.trim(),
         'format': _format.name,
         'size': _size?.name,
+        'volume_ml': _format == ProductFormat.bottle ? _volumeMl : null,
         'unit_price': parseInt(_price.text),
         'shelf_life_days': parseInt(_shelfLife.text),
         'active': _active,
@@ -145,7 +157,13 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
             selected: {_category},
             onSelectionChanged: (selection) => setState(() {
               _category = selection.first;
-              if (_category == ProductCategory.bread) _format = ProductFormat.piece;
+              // Pain à la pièce (avec une taille), jus à la bouteille (avec une contenance).
+              if (_category == ProductCategory.bread) {
+                _format = ProductFormat.piece;
+              } else {
+                _format = _isOldGlass ? ProductFormat.glass : ProductFormat.bottle;
+                _size = null;
+              }
             }),
           ),
           const SizedBox(height: 12),
@@ -153,28 +171,29 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
           const SizedBox(height: 12),
           TextFormField(controller: _nameFr, decoration: InputDecoration(labelText: l10n.nameFr), validator: required),
           const SizedBox(height: 12),
-          if (_category == ProductCategory.juice) ...[
-            SegmentedButton<ProductFormat>(
-              segments: [
-                ButtonSegment(value: ProductFormat.glass, label: Text(l10n.formatGlass)),
-                ButtonSegment(value: ProductFormat.bottle, label: Text(l10n.formatBottle)),
-              ],
-              selected: {_format == ProductFormat.piece ? ProductFormat.glass : _format},
-              onSelectionChanged: (selection) => setState(() => _format = selection.first),
-            ),
-            const SizedBox(height: 12),
-          ],
-          // Même produit vendu en plusieurs tailles : un produit par taille, chacun avec son prix.
-          Text(l10n.size),
-          const SizedBox(height: 6),
-          Wrap(spacing: 8, runSpacing: 8, children: [
-            for (final size in [null, ...ProductSize.values])
-              ChoiceChip(
-                label: Text(size == null ? l10n.sizeNone : l10n.sizeLabel(size)),
-                selected: _size == size,
-                onSelected: (_) => setState(() => _size = size),
+          if (_format == ProductFormat.glass)
+            Card(
+              color: AppColors.warning.withValues(alpha: 0.15),
+              child: ListTile(
+                leading: const Icon(Icons.info_outline_rounded, color: AppColors.warning),
+                title: Text(l10n.glassLegacy),
               ),
-          ]),
+            )
+          else if (_category == ProductCategory.juice)
+            _volumeChoice(l10n)
+          else ...[
+            // Même pain vendu en plusieurs tailles : un produit par taille, chacun avec son prix.
+            Text(l10n.size),
+            const SizedBox(height: 6),
+            Wrap(spacing: 8, runSpacing: 8, children: [
+              for (final size in [null, ...ProductSize.values])
+                ChoiceChip(
+                  label: Text(size == null ? l10n.sizeNone : l10n.sizeLabel(size)),
+                  selected: _size == size,
+                  onSelected: (_) => setState(() => _size = size),
+                ),
+            ]),
+          ],
           const SizedBox(height: 12),
           AmountField(controller: _price, label: l10n.price),
           const SizedBox(height: 12),
@@ -191,16 +210,47 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
             onChanged: (value) => setState(() => _active = value),
           ),
           const SizedBox(height: 12),
-          SheetActions(
-            onSave: () {
-              // Un jus est toujours en verre ou en bouteille.
-              if (_category == ProductCategory.juice && _format == ProductFormat.piece) _format = ProductFormat.glass;
-              _save();
-            },
-            saving: _saving,
-          ),
+          SheetActions(onSave: _save, saving: _saving),
         ],
       ),
     );
+  }
+
+  /// Chaque jus a sa (ou ses) bouteille(s) : orange 1 L, coco 50 cl…
+  Widget _volumeChoice(AppLocalizations l10n) {
+    void choose(int milliliters) => setState(() {
+          _volumeMl = milliliters;
+          _volumeMissing = false;
+        });
+
+    Future<void> askOther() async {
+      final centiliters = await askNumber(
+        context,
+        title: l10n.volumeAsk,
+        initial: _volumeMl == null ? null : _volumeMl! ~/ 10,
+        max: 1000,
+      );
+      if (centiliters != null && centiliters >= 5) choose(centiliters * 10);
+    }
+
+    final volumes = {..._commonVolumes, ?_volumeMl}.toList()..sort();
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(l10n.volume),
+      const SizedBox(height: 6),
+      Wrap(spacing: 8, runSpacing: 8, children: [
+        for (final milliliters in volumes)
+          ChoiceChip(
+            label: Text(formatVolume(milliliters)),
+            selected: _volumeMl == milliliters,
+            onSelected: (_) => choose(milliliters),
+          ),
+        ActionChip(label: Text(l10n.volumeOther), onPressed: askOther),
+      ]),
+      const SizedBox(height: 6),
+      Text(
+        _volumeMissing ? l10n.volumeRequired : l10n.volumeHelp,
+        style: TextStyle(color: _volumeMissing ? Theme.of(context).colorScheme.error : null),
+      ),
+    ]);
   }
 }

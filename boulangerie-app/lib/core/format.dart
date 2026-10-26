@@ -24,6 +24,12 @@ String formatQuantity(num value, {int decimals = 3}) {
   return '${formatInt(int.parse(parts[0]))},${parts[1]}';
 }
 
+/// Contenance d'une bouteille en millilitres : 330 → « 33 cl », 1000 → « 1 L », 1500 → « 1,5 L ».
+String formatVolume(int milliliters) {
+  if (milliliters >= 1000) return '${formatQuantity(milliliters / 1000)}${_nbsp}L';
+  return milliliters % 10 == 0 ? '${milliliters ~/ 10}${_nbsp}cl' : '$milliliters${_nbsp}ml';
+}
+
 /// Saisie utilisateur « 2,5 » ou « 2.5 » → 2.5 (null si invalide).
 double? parseDecimal(String input) => double.tryParse(input.trim().replaceAll(' ', '').replaceAll(',', '.'));
 

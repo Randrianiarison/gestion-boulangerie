@@ -155,7 +155,7 @@ Toutes sont préfixées par `/api`, échangent du JSON et demandent un jeton San
 | GET | `/me` | tous | Utilisateur connecté |
 | GET | `/dashboard` | tous | Recettes du jour, stock, invendus, alertes ; factures et salaires dus pour l'owner |
 | GET | `/products` (`?active=1`) | tous | Catalogue |
-| POST/PUT/DELETE | `/products/{id}` | owner | Gestion du catalogue |
+| POST/PUT/DELETE | `/products/{id}` | owner | Gestion du catalogue : pain `piece` (+ `size` facultatif), jus `bottle` + `volume_ml` obligatoire |
 | GET | `/stock` (`?date=`) | tous | Disponible par produit |
 | GET | `/production` (`?date=`) | tous | Lots produits ce jour-là |
 | POST | `/production` | tous | `{produced_on?, items:[{product_id, quantity}]}` → un lot par produit ; `Idempotency-Key` accepté |

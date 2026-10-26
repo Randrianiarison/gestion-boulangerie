@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:boulangerie_app/app.dart';
 import 'package:boulangerie_app/core/api_client.dart';
 import 'package:boulangerie_app/core/api_exception.dart';
+import 'package:boulangerie_app/core/format.dart';
 import 'package:boulangerie_app/core/settings.dart';
 import 'package:boulangerie_app/data/bakery_api.dart';
 import 'package:boulangerie_app/data/outbox.dart';
@@ -25,7 +26,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 // Données factices, au format exact de l'API ------------------------------------
 
 Map<String, dynamic> _product(int id, String category, String fr, String mg, String format, int price,
-        [int days = 1, String? size]) =>
+        [int days = 1, String? size, int? volumeMl]) =>
     {
       'id': id,
       'category': category,
@@ -33,6 +34,7 @@ Map<String, dynamic> _product(int id, String category, String fr, String mg, Str
       'name_mg': mg,
       'format': format,
       'size': size,
+      'volume_ml': volumeMl,
       'unit_price': price,
       'shelf_life_days': days,
       'active': true,
@@ -41,8 +43,9 @@ Map<String, dynamic> _product(int id, String category, String fr, String mg, Str
 final _products = [
   _product(1, 'bread', 'Baguette', 'Mofo lava', 'piece', 800),
   _product(2, 'bread', 'Pain de mie', 'Mofo malefaka', 'piece', 3000, 3),
-  _product(3, 'juice', 'Jus de papaye', 'Ranom-papay', 'glass', 1000),
-  _product(4, 'juice', "Jus d'avocat", 'Ranon-javoka', 'bottle', 4000, 2),
+  // Jus à la bouteille : chaque bouteille a sa contenance et son prix.
+  _product(3, 'juice', "Jus d'orange", 'Ranom-boasary', 'bottle', 5000, 2, null, 1000),
+  _product(4, 'juice', "Jus d'avocat", 'Ranon-javoka', 'bottle', 4000, 2, null, 500),
   // Même pain en deux tailles, prix différents.
   _product(5, 'bread', 'Pain au chocolat', 'Mofo sôkôla', 'piece', 1000, 2, 'small'),
   _product(6, 'bread', 'Pain au chocolat', 'Mofo sôkôla', 'piece', 1500, 2, 'large'),
@@ -103,6 +106,11 @@ class _FakeApi extends BakeryApi {
     sent.add(operation);
     return const {};
   }
+
+  final List<Json> savedProducts = [];
+
+  @override
+  Future<void> saveProduct(int? id, Json data) async => savedProducts.add(data);
 
   @override
   Future<Dashboard> dashboard() async => Dashboard.fromJson({
@@ -223,7 +231,7 @@ class _FakeApi extends BakeryApi {
         'profit': 448581,
         'top_products': [
           {'product_id': 1, 'name_fr': 'Baguette', 'name_mg': 'Mofo lava', 'format': 'piece', 'category': 'bread', 'quantity': 300, 'revenue': 240000},
-          {'product_id': 4, 'name_fr': "Jus d'avocat", 'name_mg': 'Ranon-javoka', 'format': 'bottle', 'category': 'juice', 'quantity': 40, 'revenue': 160000},
+          {'product_id': 4, 'name_fr': "Jus d'avocat", 'name_mg': 'Ranon-javoka', 'format': 'bottle', 'volume_ml': 500, 'category': 'juice', 'quantity': 40, 'revenue': 160000},
         ],
         'waste': {'quantity': 36, 'value': 28800, 'recovered': 9500},
         'series': [
@@ -368,6 +376,47 @@ void main() {
 
     // Le panier compte le prix du grand (1 500 Ar), pas celui du petit.
     expect(find.text('1 500 Ar'), findsNWidgets(2));
+  });
+
+  testWidgets('produit : un jus se vend à la bouteille, avec sa contenance et son prix', (tester) async {
+    final api = _FakeApi();
+    final container = await _startAsOwner(tester, 'fr', api: api);
+    unawaited(container.read(routerProvider).push(Routes.products));
+    await tester.pumpAndSettle();
+
+    // Chaque bouteille se distingue par sa contenance.
+    expect(find.text("Jus d'orange · ${formatVolume(1000)}"), findsOneWidget);
+    expect(find.text("Jus d'avocat · ${formatVolume(500)}"), findsOneWidget);
+
+    await tester.tap(find.text('Nouveau produit'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Jus'));
+    await tester.pumpAndSettle();
+    // Ni verre ni taille pour un jus : seulement la contenance.
+    expect(find.text('verre'), findsNothing);
+    expect(find.text('Taille unique'), findsNothing);
+
+    await tester.enterText(find.widgetWithText(TextFormField, 'Nom en malgache'), 'Ranom-boanio');
+    await tester.enterText(find.widgetWithText(TextFormField, 'Nom en français'), 'Jus de coco');
+    await tester.enterText(find.widgetWithText(TextFormField, 'Prix'), '3000');
+    Future<void> tapVisible(Finder finder) async {
+      await tester.ensureVisible(finder);
+      await tester.pumpAndSettle();
+      await tester.tap(finder);
+      await tester.pumpAndSettle();
+    }
+
+    // Sans contenance : refusé avant même d'appeler le serveur.
+    await tapVisible(find.text('Enregistrer'));
+    expect(find.text('Choisissez la contenance de la bouteille'), findsOneWidget);
+    expect(api.savedProducts, isEmpty);
+
+    await tapVisible(find.text(formatVolume(500)));
+    await tapVisible(find.text('Enregistrer'));
+
+    expect(api.savedProducts.single, containsPair('format', 'bottle'));
+    expect(api.savedProducts.single, containsPair('volume_ml', 500));
+    expect(api.savedProducts.single, containsPair('unit_price', 3000));
   });
 
   testWidgets('hors ligne : la vente est gardée, le stock en tient compte, puis elle part au retour du réseau',

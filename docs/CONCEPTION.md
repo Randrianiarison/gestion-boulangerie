@@ -25,6 +25,7 @@ Les points ambigus de la spécification ont été tranchés ainsi :
 | Comptes | L'owner crée les comptes, réinitialise un PIN et désactive un compte depuis l'appli. Un nouveau PIN ou une désactivation ferme les sessions ouvertes. |
 | Commande `stock:close-day` | Lancée à la main uniquement (rattrapage d'une journée oubliée), pas planifiée. |
 | Même produit, tailles différentes | Taille facultative Petit / Moyen / Grand (mg : Kely / Antonony / Lehibe). Un produit par taille, chacun avec son prix et son stock : « Pain au chocolat · petit » 1 000 Ar, « Pain au chocolat · grand » 1 500 Ar. |
+| Jus | Comptés et vendus **à la bouteille**, plus au verre. Chaque bouteille a sa contenance et son prix : « Jus d'orange · 1 L » 5 000 Ar, « Jus de coco · 50 cl » 3 000 Ar. Un même jus peut avoir plusieurs bouteilles (50 cl et 1 L). Les anciens produits au verre sont désactivés, leur historique reste. |
 | Coupure de réseau | Ventes et production sont gardées sur le téléphone puis envoyées au retour du réseau, sans doublon. La clôture attend que tout soit envoyé (voir § 6). |
 
 Choix par défaut, annoncés avant le développement :
@@ -75,6 +76,7 @@ erDiagram
         string name_mg
         string format "piece | glass | bottle"
         string size "small | medium | large, facultatif"
+        int volume_ml "contenance d'une bouteille, null sinon"
         int unit_price "Ar"
         int shelf_life_days "1 = jour même"
         bool active
@@ -186,15 +188,21 @@ En plus de la spécification :
 
 ## 3. Règles de calcul
 
-### 3.0 Produits : format et taille
+### 3.0 Produits : format, taille et contenance
 
-- Un produit = un nom + un format (pièce, verre, bouteille) + une taille facultative
-  (petit, moyen, grand). Le triplet (nom, format, taille) est unique.
-- Deux tailles d'un même pain sont deux produits distincts : chacun a son prix, ses lots de
-  production, son stock et sa ligne dans la clôture et dans les rapports.
-- Affichage : « Pain au chocolat · grand » dans l'appli, « Pain au chocolat (grand) » dans les
-  messages de l'API, traduits en malgache (« Mofo sôkôla (lehibe) »).
-- Listes triées par catégorie, nom, format, puis petit → moyen → grand.
+- Un produit = un nom + un format + une taille facultative (petit, moyen, grand) + une contenance
+  pour les bouteilles. Le quadruplet (nom, format, taille, contenance) est unique.
+- Le pain se vend **à la pièce**, le jus **à la bouteille** : l'API refuse un autre format.
+  La contenance (en millilitres, 50 ml à 10 L) est obligatoire pour une bouteille et interdite
+  pour le reste. Le format « verre » ne reste que pour les anciens produits : la migration les
+  désactive, et ils peuvent encore être modifiés sans changer de format.
+- Une bouteille créée avant la contenance doit la recevoir dès qu'on modifie sa fiche dans l'appli.
+- Deux tailles d'un même pain, ou deux bouteilles d'un même jus, sont deux produits distincts :
+  chacun a son prix, ses lots de production, son stock et sa ligne dans la clôture et dans les rapports.
+- Affichage : « Pain au chocolat · grand », « Jus d'orange · 1 L » dans l'appli ;
+  « Pain au chocolat (grand) », « Jus d'orange (1 L) » dans les messages de l'API, traduits en
+  malgache (« Mofo sôkôla (lehibe) », « Ranom-boasary (1 L) »). Contenance : 33 cl, 50 cl, 1 L, 1,5 L.
+- Listes triées par catégorie, nom, format, petit → moyen → grand, puis 50 cl avant 1 L.
 
 ### 3.1 Lots, stock et FIFO
 
@@ -290,7 +298,7 @@ Indicateurs en plus :
 | Recettes | Montant |
 |---|---|
 | 1 000 baguettes × 500 Ar | 500 000 |
-| 200 verres de jus × 1 000 Ar | 200 000 |
+| 200 bouteilles de jus × 1 000 Ar | 200 000 |
 | Invendus revendus moins cher | 20 000 |
 | **Total recettes** (pain 520 000, jus 200 000) | **720 000** |
 

@@ -41,6 +41,12 @@ void main() {
     expect(Product.fromJson(_product()).size, isNull); // ancienne API sans le champ
   });
 
+  test('un jus en bouteille a sa contenance, le pain non', () {
+    expect(Product.fromJson({..._product(format: 'bottle', category: 'juice'), 'volume_ml': 500}).volumeMl, 500);
+    expect(Product.fromJson({..._product(), 'volume_ml': null}).volumeMl, isNull);
+    expect(Product.fromJson(_product()).volumeMl, isNull); // ancienne API sans le champ
+  });
+
   test('Laravel envoie 0 au lieu de 0.0 : les nombres sont lus via num', () {
     final summary = SalarySummary.fromJson({
       'accrued': 385000,

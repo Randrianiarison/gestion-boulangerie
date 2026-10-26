@@ -77,23 +77,24 @@ extension EnumLabels on AppLocalizations {
       };
 }
 
-/// « Baguette », « Jus de papaye · verre », « Pain au chocolat · grand ».
+/// « Baguette », « Jus d'orange · 1 L », « Pain au chocolat · grand » (ancien produit : « Jus de papaye · verre »).
 String productLabel(
   BuildContext context, {
   required String nameFr,
   required String nameMg,
   required ProductFormat format,
   ProductSize? size,
+  int? volumeMl,
 }) {
   final l10n = context.l10n;
   return [
     context.lang == 'mg' ? nameMg : nameFr,
-    if (format != ProductFormat.piece) l10n.formatLabel(format),
+    if (volumeMl != null) formatVolume(volumeMl) else if (format != ProductFormat.piece) l10n.formatLabel(format),
     if (size != null) l10n.sizeLabel(size).toLowerCase(),
   ].join(' · ');
 }
 
 extension ProductLabel on Product {
   String label(BuildContext context) =>
-      productLabel(context, nameFr: nameFr, nameMg: nameMg, format: format, size: size);
+      productLabel(context, nameFr: nameFr, nameMg: nameMg, format: format, size: size, volumeMl: volumeMl);
 }

@@ -67,6 +67,8 @@ return [
         'name_mg' => "anarana amin'ny teny malagasy",
         'category' => 'sokajy',
         'format' => 'endrika',
+        'size' => 'habe',
+        'volume_ml' => "haben'ny tavoahangy",
         'unit_price' => "vidin'ny iray",
         'shelf_life_days' => 'faharetana',
         'unit' => 'refy',

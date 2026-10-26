@@ -19,6 +19,14 @@ void main() {
     expect(formatQuantity(2.48, decimals: 1), '2,5');
   });
 
+  test('la contenance des bouteilles s\'affiche en cl ou en L', () {
+    expect(formatVolume(330), '33${nbsp}cl');
+    expect(formatVolume(500), '50${nbsp}cl');
+    expect(formatVolume(1000), '1${nbsp}L');
+    expect(formatVolume(1500), '1,5${nbsp}L');
+    expect(formatVolume(125), '125${nbsp}ml');
+  });
+
   test('la saisie accepte la virgule ou le point', () {
     expect(parseDecimal('2,5'), 2.5);
     expect(parseDecimal('2.5'), 2.5);

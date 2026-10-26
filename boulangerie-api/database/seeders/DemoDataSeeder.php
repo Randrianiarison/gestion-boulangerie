@@ -5,7 +5,6 @@ namespace Database\Seeders;
 use App\Enums\EmployeeRole;
 use App\Enums\ExpenseCategory;
 use App\Enums\ProductCategory;
-use App\Enums\ProductFormat;
 use App\Enums\UserRole;
 use App\Models\DayClosing;
 use App\Models\Employee;
@@ -106,8 +105,7 @@ class DemoDataSeeder extends Seeder
             }
 
             $base = match (true) {
-                $product->category === ProductCategory::Juice && $product->format === ProductFormat::Bottle => 8,
-                $product->category === ProductCategory::Juice => 25,
+                $product->category === ProductCategory::Juice => 8,
                 $product->shelf_life_days > 1 => 20,
                 $product->unit_price < 500 => 150,
                 default => 90,

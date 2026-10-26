@@ -103,19 +103,21 @@ class DatabaseSeeder extends Seeder
         }
 
         $juices = [
-            // name_fr, name_mg, prix verre, prix bouteille
-            ['Jus de papaye', 'Ranom-papay', 1000, 3000],
-            ["Jus d'avocat", 'Ranon-javoka', 1500, 4000],
-            ["Jus d'ananas", 'Ranom-mananasy', 1000, 3000],
+            // name_fr, name_mg, [contenance en ml => prix] : chaque jus a sa (ou ses) bouteille(s).
+            ["Jus d'orange", 'Ranom-boasary', [500 => 3000, 1000 => 5000]],
+            ['Jus de coco', 'Ranom-boanio', [500 => 3000]],
+            ['Jus de papaye', 'Ranom-papay', [1000 => 4000]],
+            ["Jus d'avocat", 'Ranon-javoka', [500 => 4000]],
+            ["Jus d'ananas", 'Ranom-mananasy', [1000 => 4000]],
         ];
-        foreach ($juices as [$fr, $mg, $glassPrice, $bottlePrice]) {
-            // Le verre se boit le jour même, la bouteille fermée se garde deux jours.
-            foreach ([[ProductFormat::Glass, $glassPrice, 1], [ProductFormat::Bottle, $bottlePrice, 2]] as [$format, $price, $days]) {
-                Product::updateOrCreate(['name_fr' => $fr, 'format' => $format, 'size' => null], [
+        foreach ($juices as [$fr, $mg, $bottles]) {
+            foreach ($bottles as $volume => $price) {
+                // Jus vendu à la bouteille ; fermée, elle se garde deux jours.
+                Product::updateOrCreate(['name_fr' => $fr, 'format' => ProductFormat::Bottle, 'size' => null, 'volume_ml' => $volume], [
                     'category' => ProductCategory::Juice,
                     'name_mg' => $mg,
                     'unit_price' => $price,
-                    'shelf_life_days' => $days,
+                    'shelf_life_days' => 2,
                     'active' => true,
                 ]);
             }

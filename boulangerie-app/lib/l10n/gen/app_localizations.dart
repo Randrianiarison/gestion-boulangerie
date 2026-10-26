@@ -548,6 +548,42 @@ abstract class AppLocalizations {
   /// **'Grand'**
   String get sizeLarge;
 
+  /// No description provided for @volume.
+  ///
+  /// In fr, this message translates to:
+  /// **'Contenance de la bouteille'**
+  String get volume;
+
+  /// No description provided for @volumeHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les jus se vendent à la bouteille : une fiche par jus et par bouteille, chacune avec son prix.'**
+  String get volumeHelp;
+
+  /// No description provided for @volumeOther.
+  ///
+  /// In fr, this message translates to:
+  /// **'Autre…'**
+  String get volumeOther;
+
+  /// No description provided for @volumeAsk.
+  ///
+  /// In fr, this message translates to:
+  /// **'Contenance en centilitres (cl)'**
+  String get volumeAsk;
+
+  /// No description provided for @volumeRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisissez la contenance de la bouteille'**
+  String get volumeRequired;
+
+  /// No description provided for @glassLegacy.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ancien produit vendu au verre. Les jus se vendent maintenant à la bouteille : créez plutôt une bouteille.'**
+  String get glassLegacy;
+
   /// No description provided for @categoryBread.
   ///
   /// In fr, this message translates to:

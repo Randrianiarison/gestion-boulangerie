@@ -20,18 +20,93 @@ class ProductTest extends TestCase
         $this->putJson("/api/products/{$product->id}", ['unit_price' => 1])->assertForbidden();
     }
 
-    public function test_owner_creates_a_juice_in_two_formats(): void
+    public function test_juice_is_sold_by_the_bottle_each_with_its_volume_and_price(): void
     {
         $this->actingAsOwner();
-        $juice = ['category' => 'juice', 'name_fr' => 'Jus de goyave', 'name_mg' => 'Ranom-goavy', 'shelf_life_days' => 1];
+        $orange = ['category' => 'juice', 'name_fr' => "Jus d'orange", 'name_mg' => 'Ranom-boasary', 'format' => 'bottle', 'shelf_life_days' => 2];
 
-        $this->postJson('/api/products', [...$juice, 'format' => 'glass', 'unit_price' => 1000])
+        $this->postJson('/api/products', [...$orange, 'volume_ml' => 1000, 'unit_price' => 5000])
             ->assertCreated()
-            ->assertJsonPath('data.format', 'glass');
-        $this->postJson('/api/products', [...$juice, 'format' => 'bottle', 'unit_price' => 3000])->assertCreated();
+            ->assertJsonPath('data.volume_ml', 1000);
+        // Même jus, autre bouteille : son propre prix.
+        $this->postJson('/api/products', [...$orange, 'volume_ml' => 500, 'unit_price' => 3000])->assertCreated();
+        // Autre jus, même contenance : autorisé.
+        $this->postJson('/api/products', [...$orange, 'name_fr' => 'Jus de coco', 'volume_ml' => 500, 'unit_price' => 3500])->assertCreated();
 
-        $this->postJson('/api/products', [...$juice, 'format' => 'glass', 'unit_price' => 1200])
+        // Même bouteille deux fois, bouteille sans contenance, verre, jus « à la pièce » : refusés.
+        $this->postJson('/api/products', [...$orange, 'volume_ml' => 1000, 'unit_price' => 5500])->assertJsonValidationErrors('format');
+        $this->postJson('/api/products', [...$orange, 'name_fr' => 'Jus de goyave', 'unit_price' => 3000])
+            ->assertJsonValidationErrors(['volume_ml' => 'contenance']);
+        $this->postJson('/api/products', [...$orange, 'name_fr' => 'Jus de goyave', 'format' => 'glass', 'unit_price' => 1000])
             ->assertJsonValidationErrors('format');
+        $this->postJson('/api/products', [...$orange, 'name_fr' => 'Jus de goyave', 'format' => 'piece', 'volume_ml' => 500, 'unit_price' => 1000])
+            ->assertJsonValidationErrors(['format', 'volume_ml']);
+
+        // 50 cl avant 1 L.
+        $volumes = collect($this->getJson('/api/products')->json('data'))
+            ->where('name_fr', "Jus d'orange")
+            ->pluck('volume_ml')
+            ->values()
+            ->all();
+        $this->assertSame([500, 1000], $volumes);
+    }
+
+    public function test_bread_is_sold_by_the_piece_without_volume(): void
+    {
+        $this->actingAsOwner();
+        $bread = ['category' => 'bread', 'name_fr' => 'Baguette', 'name_mg' => 'Mofo lava', 'unit_price' => 800, 'shelf_life_days' => 1];
+
+        $this->postJson('/api/products', [...$bread, 'format' => 'bottle', 'volume_ml' => 500])->assertJsonValidationErrors('format');
+        $this->postJson('/api/products', [...$bread, 'format' => 'piece', 'volume_ml' => 500])->assertJsonValidationErrors('volume_ml');
+        $this->postJson('/api/products', [...$bread, 'format' => 'piece', 'volume_ml' => null])
+            ->assertCreated()
+            ->assertJsonPath('data.volume_ml', null);
+    }
+
+    public function test_old_glass_juice_can_still_be_edited_and_old_bottle_gets_its_volume(): void
+    {
+        $this->actingAsOwner();
+        $glass = Product::factory()->glass()->create(['name_fr' => 'Jus de papaye']);
+        $bottle = Product::factory()->juice()->create(['name_fr' => 'Jus de papaye', 'volume_ml' => null]);
+        $payload = fn (Product $product) => [
+            'category' => 'juice',
+            'name_fr' => $product->name_fr,
+            'name_mg' => $product->name_mg,
+            'format' => $product->format->value,
+            'unit_price' => $product->unit_price,
+            'shelf_life_days' => $product->shelf_life_days,
+            'active' => $product->active,
+        ];
+
+        // Le verre garde son format (pour l'historique) ; on peut toujours le modifier.
+        $this->putJson("/api/products/{$glass->id}", [...$payload($glass), 'unit_price' => 1200])
+            ->assertOk()
+            ->assertJsonPath('data.format', 'glass');
+
+        // Une bouteille d'avant reçoit sa contenance dès qu'on la modifie.
+        $this->putJson("/api/products/{$bottle->id}", $payload($bottle))->assertJsonValidationErrors('volume_ml');
+        $this->putJson("/api/products/{$bottle->id}", [...$payload($bottle), 'volume_ml' => 1000])
+            ->assertOk()
+            ->assertJsonPath('data.volume_ml', 1000);
+        // Changer seulement le prix reste possible sans renvoyer la contenance.
+        $this->putJson("/api/products/{$bottle->id}", ['unit_price' => 4500])->assertOk()->assertJsonPath('data.volume_ml', 1000);
+    }
+
+    public function test_volume_appears_in_messages(): void
+    {
+        $this->actingAsStaff();
+        $orange = Product::factory()->juice(500)->create(['name_fr' => "Jus d'orange", 'name_mg' => 'Ranom-boasary']);
+
+        $this->postJson('/api/sales', ['items' => [['product_id' => $orange->id, 'quantity' => 1]]])
+            ->assertStatus(422)
+            ->assertJsonPath('params.product', "Jus d'orange (50 cl)");
+        $this->postJson('/api/sales', ['items' => [['product_id' => $orange->id, 'quantity' => 1]]], ['Accept-Language' => 'mg'])
+            ->assertJsonPath('params.product', 'Ranom-boasary (50 cl)');
+
+        $this->assertSame('33 cl', Product::volumeLabel(330));
+        $this->assertSame('1 L', Product::volumeLabel(1000));
+        $this->assertSame('1,5 L', Product::volumeLabel(1500));
+        $this->assertSame('125 ml', Product::volumeLabel(125));
     }
 
     public function test_same_bread_in_two_sizes_with_its_own_price(): void

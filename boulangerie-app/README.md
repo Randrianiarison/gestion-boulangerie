@@ -161,7 +161,7 @@ Les tests couvrent :
 | Dépenses | owner | Mois par mois, factures payées / à payer / en retard |
 | Employés | owner | Solde dû, mois non payés, paiements, changements de salaire |
 | Rapports | owner | Semaine / mois, période précédente / suivante, graphique recettes vs charges, détail, bénéfice |
-| Produits, Comptes | owner | Catalogue et prix ; comptes de connexion et codes PIN |
+| Produits, Comptes | owner | Catalogue et prix (pain : taille facultative ; jus : contenance de la bouteille, 50 cl, 1 L…) ; comptes de connexion et codes PIN |
 | En attente d'envoi | tous | Ventes et production faites sans connexion ; « Envoyer maintenant », réessayer ou supprimer une opération refusée. S'ouvre depuis le bandeau « Hors ligne » |
 
 ## Langues

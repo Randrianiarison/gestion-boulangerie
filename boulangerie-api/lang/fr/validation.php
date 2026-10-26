@@ -66,6 +66,8 @@ return [
         'name_mg' => 'nom en malgache',
         'category' => 'catégorie',
         'format' => 'format',
+        'size' => 'taille',
+        'volume_ml' => 'contenance',
         'unit_price' => 'prix unitaire',
         'shelf_life_days' => 'durée de conservation',
         'unit' => 'unité',

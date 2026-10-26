@@ -2,6 +2,7 @@ import 'json.dart';
 
 enum ProductCategory { bread, juice }
 
+/// Pain à la pièce, jus à la bouteille ; `glass` ne reste que pour les anciens produits.
 enum ProductFormat { piece, glass, bottle }
 
 /// Taille facultative : même produit, même qualité, quantité et prix différents.
@@ -21,6 +22,7 @@ class Product {
     required this.nameMg,
     required this.format,
     this.size,
+    this.volumeMl,
     required this.unitPrice,
     required this.shelfLifeDays,
     required this.active,
@@ -33,6 +35,7 @@ class Product {
         nameMg: json['name_mg'] as String,
         format: ProductFormat.values.byName(json['format'] as String),
         size: productSizeFromJson(json['size']),
+        volumeMl: asIntOrNull(json['volume_ml']),
         unitPrice: asInt(json['unit_price']),
         shelfLifeDays: asInt(json['shelf_life_days']),
         active: json['active'] as bool,
@@ -44,6 +47,9 @@ class Product {
   final String nameMg;
   final ProductFormat format;
   final ProductSize? size;
+
+  /// Contenance d'une bouteille de jus, en millilitres (null pour le pain).
+  final int? volumeMl;
   final int unitPrice;
   final int shelfLifeDays;
   final bool active;

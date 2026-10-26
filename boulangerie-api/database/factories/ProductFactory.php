@@ -33,14 +33,26 @@ class ProductFactory extends Factory
         return $this->state(fn () => ['shelf_life_days' => $days]);
     }
 
-    public function juice(ProductFormat $format = ProductFormat::Glass): static
+    /** Jus en bouteille (1 L par défaut). */
+    public function juice(int $volumeMl = 1000): static
     {
         return $this->state(fn () => [
             'category' => ProductCategory::Juice,
             'name_fr' => 'Jus '.fake()->unique()->word(),
             'name_mg' => 'Ranom-boankazo '.fake()->unique()->word(),
-            'format' => $format,
-            'unit_price' => $format === ProductFormat::Bottle ? 3000 : 1000,
+            'format' => ProductFormat::Bottle,
+            'volume_ml' => $volumeMl,
+            'unit_price' => 3000,
+        ]);
+    }
+
+    /** Ancien jus vendu au verre (plus proposé, désactivé). */
+    public function glass(): static
+    {
+        return $this->juice()->state(fn () => [
+            'format' => ProductFormat::Glass,
+            'unit_price' => 1000,
+            'active' => false,
         ]);
     }
 }
